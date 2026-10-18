@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Primary -->
+    <color name="primary">#7C4DFF</color>
+    <color name="primary_variant">#651FFF</color>
+    <color name="primary_container">#251B4E</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_primary_container">#E8DDFF</color>
+
+    <!-- Accent Mint / Success -->
+    <color name="accent">#00E676</color>
+    <color name="accent_container">#0E3321</color>
+    <color name="on_accent">#00391A</color>
+
+    <!-- Warning / Amber -->
+    <color name="amber">#FFB300</color>
+    <color name="amber_container">#382900</color>
+
+    <!-- Error -->
+    <color name="error">#FF5252</color>
+
+    <!-- Surfaces & Backgrounds (Dark First aesthetic) -->
+    <color name="bg_dark">#0E1118</color>
+    <color name="surface_card">#171B26</color>
+    <color name="surface_card_elevated">#212636</color>
+    <color name="surface_border">#2C3349</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#F1F5F9</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="text_tertiary">#64748B</color>
+
+    <!-- Badges & Chips -->
+    <color name="chip_bg">#232A3B</color>
+    <color name="chip_border">#3B445D</color>
+    <color name="pro_gold">#FFD700</color>
+    <color name="pro_gold_dark">#B8860B</color>
+</resources>

@@ -1,0 +1,62 @@
+[
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/layout_activity_main.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/xml_backup_rules.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/layout_fragment_home.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_bg_card_highlight.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/bg_card_highlight.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/layout_fragment_result.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/layout/fragment_result.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_bg_card.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/bg_card.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_bg_gradient_btn.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/bg_gradient_btn.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/drawable_bg_pro_badge.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/drawable/bg_pro_badge.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/layout_fragment_analysis.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/layout/fragment_analysis.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/layout_fragment_processing.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/layout/fragment_processing.xml"
+    },
+    {
+        "merged": "com.apadev.memoryfix.app-debug-59:/xml_data_extraction_rules.xml.flat",
+        "source": "com.apadev.memoryfix.app-main-61:/xml/data_extraction_rules.xml"
+    }
+]

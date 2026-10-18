@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">MemoryFix</string>
+    <string name="app_tagline">Restore original dates, locations &amp; overlays to your exported photos</string>
+    <string name="select_folder_title">Select Export Folder</string>
+    <string name="select_folder_desc">Pick the extracted folder containing your exported media and memories_history.json</string>
+    <string name="btn_select_folder">Select Export Folder</string>
+    <string name="how_it_works_title">How It Works</string>
+    <string name="step_1">1. Export your data from Snapchat / cloud archive</string>
+    <string name="step_2">2. Extract the ZIP file(s) into a folder on your phone</string>
+    <string name="step_3">3. Select the folder here — MemoryFix restores everything instantly</string>
+    <string name="pro_badge">PRO</string>
+    <string name="btn_upgrade_pro">Unlock Fast Pro Mode</string>
+
+    <!-- Analysis Screen -->
+    <string name="analysis_title">Scan Results</string>
+    <string name="total_found">Total Media Found</string>
+    <string name="photos_found">Photos</string>
+    <string name="videos_found">Videos</string>
+    <string name="matched_metadata">Metadata Matched</string>
+    <string name="overlays_found">Overlays Detected</string>
+    <string name="duplicates_found">Duplicates</string>
+    <string name="detected_timezone">Detected Timezone</string>
+    <string name="btn_change_timezone">Change</string>
+
+    <!-- Toggles -->
+    <string name="toggle_dates_title">Restore Original Capture Dates</string>
+    <string name="toggle_dates_desc">Required • Restores timestamps to EXIF and file records so Google Photos shows them in timeline</string>
+
+    <string name="toggle_location_title">Embed GPS Locations</string>
+    <string name="toggle_location_desc">Adds latitude &amp; longitude coordinates so photos appear on your photo map</string>
+
+    <string name="toggle_overlay_title">Merge Overlay Stickers &amp; Text</string>
+    <string name="toggle_overlay_desc">Bakes captions, filters, and stickers directly onto the original photo</string>
+
+    <string name="toggle_duplicates_title">Organize Duplicate Files</string>
+    <string name="toggle_duplicates_desc">Identifies identical raw files across multi-ZIP parts and groups them</string>
+
+    <string name="toggle_organize_title">Organize into Year/Month Folders</string>
+    <string name="toggle_organize_desc">Creates structured folders like 2023/July/ for a tidy gallery</string>
+
+    <string name="btn_start_processing">Start Fixing Memories</string>
+
+    <!-- Processing Screen -->
+    <string name="processing_title">Fixing Your Memories…</string>
+    <string name="processing_subtitle">Please keep the app open while we process your files</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- Result Screen -->
+    <string name="result_success_title">All Memories Fixed!</string>
+    <string name="result_success_desc">Your photos and videos now have accurate capture dates and locations. Google Photos and gallery apps will index them in their rightful timeline.</string>
+    <string name="btn_open_gallery">Open Gallery</string>
+    <string name="btn_fix_another">Fix Another Folder</string>
+</resources>
