@@ -7,6 +7,9 @@ import android.os.Build
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileDescriptor
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -28,6 +31,7 @@ object ExifManager {
         coordinates: Pair<Double, Double>?,
         timeZoneId: String = "UTC"
     ): Boolean {
+        if (epochMillis == null && coordinates == null) return false
         return try {
             context.contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
                 writeToFd(pfd.fileDescriptor, epochMillis, coordinates, timeZoneId)
@@ -39,24 +43,79 @@ object ExifManager {
     }
 
     /**
-     * Overload for direct java.io.File
+     * Applies date/time to a video file via FileDescriptor (SAF-compatible).
+     * Patches MP4 creation/modification time in the `mvhd` atom.
      */
-    fun applyMetadataToFile(
-        file: File,
-        epochMillis: Long?,
-        coordinates: Pair<Double, Double>?,
-        timeZoneId: String = "UTC"
+    fun applyMetadataToVideo(
+        context: Context,
+        uri: Uri,
+        epochMillis: Long?
     ): Boolean {
+        if (epochMillis == null) return false
         return try {
-            val exif = ExifInterface(file)
-            writeExifTags(exif, epochMillis, coordinates, timeZoneId)
-            exif.saveAttributes()
-            if (epochMillis != null) {
-                file.setLastModified(epochMillis)
-            }
-            true
+            context.contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
+                patchMp4Timestamp(pfd.fileDescriptor, epochMillis)
+            } ?: false
         } catch (e: Exception) {
             e.printStackTrace()
+            false
+        }
+    }
+
+    private fun patchMp4Timestamp(fd: FileDescriptor, epochMillis: Long): Boolean {
+        return try {
+            val inChannel = FileInputStream(fd).channel
+            val outChannel = FileOutputStream(fd).channel
+
+            // Seconds from Jan 1, 1904 to Jan 1, 1970 UTC
+            val mp4EpochOffset = 2082844800L
+            val mp4Seconds = (epochMillis / 1000) + mp4EpochOffset
+
+            // Search for "mvhd" atom in the first 2MB
+            val searchLimit = Math.min(inChannel.size(), 2 * 1024 * 1024L)
+            if (searchLimit < 16) return false
+
+            val buffer = ByteBuffer.allocate(searchLimit.toInt())
+            inChannel.position(0)
+            inChannel.read(buffer)
+            buffer.flip()
+
+            val bytes = buffer.array()
+            var mvhdPos = -1
+            // search for 'm', 'v', 'h', 'd'
+            for (i in 0 until bytes.size - 8) {
+                if (bytes[i] == 0x6D.toByte() &&
+                    bytes[i + 1] == 0x76.toByte() &&
+                    bytes[i + 2] == 0x68.toByte() &&
+                    bytes[i + 3] == 0x64.toByte()
+                ) {
+                    mvhdPos = i
+                    break
+                }
+            }
+
+            if (mvhdPos != -1) {
+                val version = bytes[mvhdPos + 4].toInt()
+                val writePos = (mvhdPos + 4 + 4).toLong() // skip 'mvhd' (4) + version(1) + flags(3) = 8 bytes
+                outChannel.position(writePos)
+
+                if (version == 0) {
+                    val timeBuf = ByteBuffer.allocate(8)
+                    timeBuf.putInt(mp4Seconds.toInt())
+                    timeBuf.putInt(mp4Seconds.toInt())
+                    timeBuf.flip()
+                    outChannel.write(timeBuf)
+                } else if (version == 1) {
+                    val timeBuf = ByteBuffer.allocate(16)
+                    timeBuf.putLong(mp4Seconds)
+                    timeBuf.putLong(mp4Seconds)
+                    timeBuf.flip()
+                    outChannel.write(timeBuf)
+                }
+                return true
+            }
+            false
+        } catch (e: Exception) {
             false
         }
     }

@@ -6,8 +6,10 @@ import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.apadev.memoryfix.MainActivity
+import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentResultBinding
 import com.google.android.play.core.review.ReviewManagerFactory
 
@@ -16,15 +18,37 @@ class ResultFragment : Fragment() {
     private var _binding: FragmentResultBinding? = null
     private val binding get() = _binding!!
 
-    private var totalCount: Int = 0
+    private var totalFixed: Int = 0
+    private var photosFixed: Int = 0
+    private var videosFixed: Int = 0
+    private var overlaysMerged: Int = 0
+    private var failedCount: Int = 0
+    private var totalScanned: Int = 0
 
     companion object {
-        private const val ARG_TOTAL_COUNT = "ARG_TOTAL_COUNT"
+        private const val ARG_TOTAL_FIXED = "ARG_TOTAL_FIXED"
+        private const val ARG_PHOTOS_FIXED = "ARG_PHOTOS_FIXED"
+        private const val ARG_VIDEOS_FIXED = "ARG_VIDEOS_FIXED"
+        private const val ARG_OVERLAYS_MERGED = "ARG_OVERLAYS_MERGED"
+        private const val ARG_FAILED_COUNT = "ARG_FAILED_COUNT"
+        private const val ARG_TOTAL_SCANNED = "ARG_TOTAL_SCANNED"
 
-        fun newInstance(total: Int): ResultFragment {
+        fun newInstance(
+            totalFixed: Int,
+            photosFixed: Int,
+            videosFixed: Int,
+            overlaysMerged: Int = 0,
+            failedCount: Int = 0,
+            totalScanned: Int = 0
+        ): ResultFragment {
             return ResultFragment().apply {
                 arguments = Bundle().apply {
-                    putInt(ARG_TOTAL_COUNT, total)
+                    putInt(ARG_TOTAL_FIXED, totalFixed)
+                    putInt(ARG_PHOTOS_FIXED, photosFixed)
+                    putInt(ARG_VIDEOS_FIXED, videosFixed)
+                    putInt(ARG_OVERLAYS_MERGED, overlaysMerged)
+                    putInt(ARG_FAILED_COUNT, failedCount)
+                    putInt(ARG_TOTAL_SCANNED, totalScanned)
                 }
             }
         }
@@ -32,7 +56,12 @@ class ResultFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        totalCount = arguments?.getInt(ARG_TOTAL_COUNT, 0) ?: 0
+        totalFixed = arguments?.getInt(ARG_TOTAL_FIXED, 0) ?: 0
+        photosFixed = arguments?.getInt(ARG_PHOTOS_FIXED, 0) ?: 0
+        videosFixed = arguments?.getInt(ARG_VIDEOS_FIXED, 0) ?: 0
+        overlaysMerged = arguments?.getInt(ARG_OVERLAYS_MERGED, 0) ?: 0
+        failedCount = arguments?.getInt(ARG_FAILED_COUNT, 0) ?: 0
+        totalScanned = arguments?.getInt(ARG_TOTAL_SCANNED, 0) ?: 0
     }
 
     override fun onCreateView(
@@ -47,8 +76,39 @@ class ResultFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.tvResultDatesCount.text = totalCount.toString()
-        binding.tvResultOverlaysCount.text = "All matched"
+        // Prominent Dual Cards: Successful vs Failed
+        binding.tvHeaderSuccessCount.text = totalFixed.toString()
+        binding.tvHeaderFailedCount.text = failedCount.toString()
+
+        if (failedCount > 0) {
+            val errorColor = ContextCompat.getColor(requireContext(), R.color.error)
+            binding.ivFailedIcon.setColorFilter(errorColor)
+            binding.tvFailedLabel.setTextColor(errorColor)
+            binding.tvHeaderFailedCount.setTextColor(errorColor)
+
+            binding.layoutSkippedRow.visibility = View.VISIBLE
+            binding.layoutSkippedContent.visibility = View.VISIBLE
+            binding.tvResultSkippedCount.text = failedCount.toString()
+        } else {
+            val secondaryColor = ContextCompat.getColor(requireContext(), R.color.text_secondary)
+            binding.ivFailedIcon.setColorFilter(secondaryColor)
+            binding.tvFailedLabel.setTextColor(secondaryColor)
+            binding.tvHeaderFailedCount.setTextColor(secondaryColor)
+
+            binding.layoutSkippedRow.visibility = View.GONE
+            binding.layoutSkippedContent.visibility = View.GONE
+        }
+
+        // Show actual fixed count vs total scanned in summary card
+        binding.tvResultDatesCount.text = if (totalScanned > 0 && totalScanned != totalFixed) {
+            "$totalFixed of $totalScanned"
+        } else {
+            totalFixed.toString()
+        }
+
+        binding.tvResultPhotosCount.text = photosFixed.toString()
+        binding.tvResultVideosCount.text = videosFixed.toString()
+        binding.tvResultOverlaysCount.text = overlaysMerged.toString()
 
         binding.btnOpenGallery.setOnClickListener {
             try {

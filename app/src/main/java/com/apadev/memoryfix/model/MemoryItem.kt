@@ -72,4 +72,8 @@ data class MemoryItem(
             null
         }
     }
+
+    fun isVideo(): Boolean {
+        return mediaType?.contains("VIDEO", ignoreCase = true) == true
+    }
 }

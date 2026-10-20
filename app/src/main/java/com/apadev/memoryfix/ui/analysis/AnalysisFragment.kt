@@ -71,11 +71,34 @@ class AnalysisFragment : Fragment() {
 
         binding.tvCurrentTimezone.text = selectedTimezone
         binding.tvFolderScanStatus.text = "Scanning export folder..."
+        binding.progressScan.visibility = View.VISIBLE
+        binding.ivScanComplete.visibility = View.GONE
+        binding.btnStartProcessing.isEnabled = false
+        binding.btnStartProcessing.alpha = 0.5f
 
-        // Start scanning in background
+        // Start scanning with real-time live progress
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                MediaScanner.scanTree(requireContext(), uri)
+                MediaScanner.scanTree(requireContext(), uri, selectedTimezone) { progress ->
+                    if (!progress.isComplete && scanResult == null) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (_binding != null && scanResult == null) {
+                                binding.tvTotalFiles.text = progress.totalFound.toString()
+                                binding.tvPhotoCount.text = progress.photosFound.toString()
+                                binding.tvVideoCount.text = progress.videosFound.toString()
+                                binding.tvOverlayCount.text = progress.overlaysFound.toString()
+                                binding.tvDuplicateCount.text = progress.duplicatesFound.toString()
+                                binding.tvMatchedMetadata.text = progress.matchedCount.toString()
+
+                                if (progress.isMatchingPhase) {
+                                    binding.tvFolderScanStatus.text = "Matching history: ${progress.matchedCount} of ${progress.totalFound}..."
+                                } else {
+                                    binding.tvFolderScanStatus.text = "Scanning: ${progress.totalFound} items found..."
+                                }
+                            }
+                        }
+                    }
+                }
             }
             scanResult = result
             populateStats(result)
@@ -92,7 +115,9 @@ class AnalysisFragment : Fragment() {
 
     private fun populateStats(result: FullScanResult) {
         val s = result.stats
-        binding.tvFolderScanStatus.text = "Scan complete • ${s.totalMediaFiles} files found"
+        binding.progressScan.visibility = View.GONE
+        binding.ivScanComplete.visibility = View.VISIBLE
+        binding.tvFolderScanStatus.text = "Scan complete • ${s.totalMediaFiles} files ready"
         binding.tvTotalFiles.text = s.totalMediaFiles.toString()
         binding.tvPhotoCount.text = s.photoCount.toString()
         binding.tvVideoCount.text = s.videoCount.toString()
@@ -103,15 +128,36 @@ class AnalysisFragment : Fragment() {
         binding.switchOverlay.isEnabled = s.overlayCount > 0
         binding.switchOverlay.isChecked = s.overlayCount > 0
 
+        binding.btnStartProcessing.isEnabled = true
+        binding.btnStartProcessing.alpha = 1.0f
         binding.btnStartProcessing.text = "Start Fixing Memories (~${s.estimatedTimeSeconds}s)"
     }
 
     private fun showTimezoneDialog() {
-        val zones = TimeZone.getAvailableIDs().sorted().take(50).toTypedArray()
+        val defaultId = TimeZone.getDefault().id
+        val popularZones = listOf(
+            defaultId,
+            "Asia/Calcutta",
+            "Asia/Kolkata",
+            "UTC",
+            "America/New_York",
+            "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Asia/Dubai",
+            "Asia/Singapore",
+            "Asia/Tokyo",
+            "Australia/Sydney"
+        ).distinct()
+        val allZones = (popularZones + TimeZone.getAvailableIDs().sorted()).distinct().toTypedArray()
+
         AlertDialog.Builder(requireContext())
             .setTitle("Select Timezone")
-            .setItems(zones) { _, which ->
-                selectedTimezone = zones[which]
+            .setItems(allZones) { _, which ->
+                selectedTimezone = allZones[which]
                 binding.tvCurrentTimezone.text = selectedTimezone
             }
             .setNegativeButton("Cancel", null)

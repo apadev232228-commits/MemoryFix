@@ -7,18 +7,21 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.net.Uri
-import java.io.InputStream
-import java.io.OutputStream
+import android.provider.DocumentsContract
+import androidx.documentfile.provider.DocumentFile
 
 object OverlayCompositor {
 
     /**
-     * Composites an overlay PNG onto a base photo and writes the resulting JPEG to outputStream.
+     * Composites an overlay PNG onto a base photo in-place and safely cleans up the overlay file.
+     * Decodes all input streams into memory FIRST before opening any output stream to avoid
+     * SAF file truncation collisions.
      */
-    fun composite(
-        baseImageStream: InputStream,
-        overlayImageStream: InputStream,
-        outputStream: OutputStream,
+    fun compositeInPlace(
+        context: Context,
+        baseUri: Uri,
+        overlayUri: Uri,
+        cleanupOverlayFile: Boolean = true,
         quality: Int = 95
     ): Boolean {
         var baseBitmap: Bitmap? = null
@@ -26,10 +29,15 @@ object OverlayCompositor {
         var resultBitmap: Bitmap? = null
 
         return try {
-            baseBitmap = BitmapFactory.decodeStream(baseImageStream) ?: return false
-            overlayBitmap = BitmapFactory.decodeStream(overlayImageStream) ?: return false
+            // 1. Read base bitmap into memory
+            val baseIn = context.contentResolver.openInputStream(baseUri) ?: return false
+            baseBitmap = baseIn.use { BitmapFactory.decodeStream(it) } ?: return false
 
-            // Create mutable copy of base or new bitmap matching base dimensions
+            // 2. Read overlay bitmap into memory
+            val overlayIn = context.contentResolver.openInputStream(overlayUri) ?: return false
+            overlayBitmap = overlayIn.use { BitmapFactory.decodeStream(it) } ?: return false
+
+            // 3. Create composited bitmap matching base dimensions
             val width = baseBitmap.width
             val height = baseBitmap.height
 
@@ -44,9 +52,24 @@ object OverlayCompositor {
             val destRect = Rect(0, 0, width, height)
             canvas.drawBitmap(overlayBitmap, null, destRect, paint)
 
-            // Compress to JPEG
-            resultBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-            outputStream.flush()
+            // Recycle input bitmaps to free memory before compressing
+            baseBitmap.recycle()
+            baseBitmap = null
+            overlayBitmap.recycle()
+            overlayBitmap = null
+
+            // 4. Safely write result back into base photo
+            val out = context.contentResolver.openOutputStream(baseUri, "wt") ?: return false
+            out.use { outStream ->
+                resultBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
+                outStream.flush()
+            }
+
+            // 5. Clean up overlay file so it doesn't show as a separate image in gallery
+            if (cleanupOverlayFile) {
+                deleteFileSilently(context, overlayUri)
+            }
+
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -58,31 +81,15 @@ object OverlayCompositor {
         }
     }
 
-    /**
-     * Overload for SAF Uris
-     */
-    fun compositeUris(
-        context: Context,
-        baseUri: Uri,
-        overlayUri: Uri,
-        outputUri: Uri,
-        quality: Int = 95
-    ): Boolean {
-        return try {
-            val baseIn = context.contentResolver.openInputStream(baseUri) ?: return false
-            val overlayIn = context.contentResolver.openInputStream(overlayUri) ?: return false
-            val out = context.contentResolver.openOutputStream(outputUri) ?: return false
-
-            baseIn.use { bStream ->
-                overlayIn.use { oStream ->
-                    out.use { outStream ->
-                        composite(bStream, oStream, outStream, quality)
-                    }
-                }
-            }
+    private fun deleteFileSilently(context: Context, uri: Uri) {
+        try {
+            DocumentsContract.deleteDocument(context.contentResolver, uri)
         } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            try {
+                DocumentFile.fromSingleUri(context, uri)?.delete()
+            } catch (ex: Exception) {
+                // Ignore cleanup errors
+            }
         }
     }
 }
