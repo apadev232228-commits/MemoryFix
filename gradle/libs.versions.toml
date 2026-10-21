@@ -19,6 +19,7 @@ play-services-ads = "22.6.0"
 billing-ktx = "8.0.0"
 play-review = "2.0.1"
 coroutines = "1.10.1"
+media3 = "1.5.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,9 @@ google-ads = { group = "com.google.android.gms", name = "play-services-ads", ver
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing-ktx" }
 play-review = { group = "com.google.android.play", name = "review-ktx", version.ref = "play-review" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-media3-transformer = { group = "androidx.media3", name = "media3-transformer", version.ref = "media3" }
+androidx-media3-effect = { group = "androidx.media3", name = "media3-effect", version.ref = "media3" }
+androidx-media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

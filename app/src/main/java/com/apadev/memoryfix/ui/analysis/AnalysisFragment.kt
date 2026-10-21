@@ -137,6 +137,24 @@ class AnalysisFragment : Fragment() {
             showTimezoneDialog()
         }
 
+        binding.switchVideoOverlay.setOnClickListener {
+            if (binding.switchVideoOverlay.isChecked) {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Burn Stickers into Videos?")
+                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to the original untouched videos.\n\nIf turned off, video stickers are still saved with matching capture dates alongside your videos.")
+                    .setPositiveButton("Enable (Slower)") { _, _ ->
+                        // Keep enabled
+                    }
+                    .setNegativeButton("Keep Off (Recommended)") { _, _ ->
+                        binding.switchVideoOverlay.isChecked = false
+                    }
+                    .setOnCancelListener {
+                        binding.switchVideoOverlay.isChecked = false
+                    }
+                    .show()
+            }
+        }
+
         binding.btnStartProcessing.setOnClickListener {
             val stats = scanResult?.stats
             if (stats != null && hasMismatch(stats)) {
@@ -189,10 +207,19 @@ class AnalysisFragment : Fragment() {
         if (s.overlayCount > 0) {
             binding.cardOverlays.visibility = View.VISIBLE
             binding.tvOverlayTitle.text = "${numberFormat.format(s.overlayCount)} Stickers & Captions"
+            if (s.videoOverlayCount > 0) {
+                binding.tvOverlaySubtitle.text = "${numberFormat.format(s.photoOverlayCount)} on photos (merged) • ${numberFormat.format(s.videoOverlayCount)} on videos"
+                binding.layoutVideoOverlayOption.visibility = View.VISIBLE
+                binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s per video)."
+            } else {
+                binding.tvOverlaySubtitle.text = "Will be combined onto matching photos"
+                binding.layoutVideoOverlayOption.visibility = View.GONE
+            }
             binding.switchOverlay.isEnabled = true
             binding.switchOverlay.isChecked = true
         } else {
             binding.cardOverlays.visibility = View.GONE
+            binding.layoutVideoOverlayOption.visibility = View.GONE
             binding.switchOverlay.isEnabled = false
             binding.switchOverlay.isChecked = false
         }
@@ -314,6 +341,7 @@ class AnalysisFragment : Fragment() {
                 .putString(ExportProcessWorker.KEY_TREE_URI, uri.toString())
                 .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, binding.switchLocation.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, binding.switchOverlay.isChecked)
+                .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, binding.switchVideoOverlay.isChecked)
                 .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
                 .build()
 

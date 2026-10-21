@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.billing.ktx)
     implementation(libs.play.review)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
+    implementation(libs.androidx.media3.common)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

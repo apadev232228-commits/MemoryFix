@@ -178,6 +178,8 @@ object MediaScanner {
         // Match media files against parsed metadata
         var matchedCount = 0
         var overlayMatchedCount = 0
+        var photoOverlayMatchedCount = 0
+        var videoOverlayMatchedCount = 0
         val mediaList = mutableListOf<ScannedMedia>()
 
         for ((index, doc) in mediaDocs.withIndex()) {
@@ -190,7 +192,10 @@ object MediaScanner {
             // Overlay matching using canonical key
             val baseKey = extractCanonicalBaseKey(name)
             val overlay = overlayDocs[baseKey]
-            if (overlay != null) overlayMatchedCount++
+            if (overlay != null) {
+                overlayMatchedCount++
+                if (isVideo) videoOverlayMatchedCount++ else photoOverlayMatchedCount++
+            }
 
             // Tolerance-aware memory matching
             val matched = matcher.findMatch(
@@ -237,6 +242,8 @@ object MediaScanner {
             videoCount = videoCount,
             matchedCount = matchedCount,
             overlayCount = maxOf(overlayCount, overlayMatchedCount),
+            photoOverlayCount = photoOverlayMatchedCount,
+            videoOverlayCount = videoOverlayMatchedCount,
             duplicateCount = duplicateCount,
             missingMetadataCount = (totalFiles - matchedCount).coerceAtLeast(0),
             detectedTimezone = detectedTimezone,

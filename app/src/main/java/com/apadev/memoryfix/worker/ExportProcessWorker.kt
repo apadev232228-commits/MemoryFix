@@ -29,6 +29,7 @@ class ExportProcessWorker(
         const val KEY_TREE_URI = "KEY_TREE_URI"
         const val KEY_EMBED_LOCATION = "KEY_EMBED_LOCATION"
         const val KEY_MERGE_OVERLAYS = "KEY_MERGE_OVERLAYS"
+        const val KEY_BURN_VIDEO_OVERLAYS = "KEY_BURN_VIDEO_OVERLAYS"
         const val KEY_TIMEZONE = "KEY_TIMEZONE"
 
         const val PROGRESS_CURRENT = "PROGRESS_CURRENT"
@@ -53,6 +54,7 @@ class ExportProcessWorker(
         val treeUriString = inputData.getString(KEY_TREE_URI) ?: return@withContext Result.failure()
         val embedLocation = inputData.getBoolean(KEY_EMBED_LOCATION, true)
         val mergeOverlays = inputData.getBoolean(KEY_MERGE_OVERLAYS, true)
+        val burnVideoOverlays = inputData.getBoolean(KEY_BURN_VIDEO_OVERLAYS, false)
         val timeZone = inputData.getString(KEY_TIMEZONE) ?: "UTC"
 
         val treeUri = Uri.parse(treeUriString)
@@ -137,15 +139,26 @@ class ExportProcessWorker(
 
             try {
                 // 1. Merge overlay if requested and present
-                if (mergeOverlays && item.overlayUri != null && !item.isVideo) {
-                    val merged = OverlayCompositor.compositeInPlace(
-                        context = context,
-                        baseUri = item.uri,
-                        overlayUri = item.overlayUri!!,
-                        cleanupOverlayFile = true
-                    )
-                    if (merged) {
-                        overlaysMerged++
+                if (mergeOverlays && item.overlayUri != null) {
+                    if (!item.isVideo) {
+                        val merged = OverlayCompositor.compositeInPlace(
+                            context = context,
+                            baseUri = item.uri,
+                            overlayUri = item.overlayUri!!,
+                            cleanupOverlayFile = true
+                        )
+                        if (merged) {
+                            overlaysMerged++
+                        }
+                    } else if (burnVideoOverlays) {
+                        val vMerged = com.apadev.memoryfix.data.VideoOverlayCompositor.compositeInPlace(
+                            context = context,
+                            videoUri = item.uri,
+                            overlayUri = item.overlayUri!!
+                        )
+                        if (vMerged) {
+                            overlaysMerged++
+                        }
                     }
                 }
 
@@ -165,6 +178,16 @@ class ExportProcessWorker(
                     if (vSuccess) {
                         videosFixed++
                         itemFixed = true
+                    }
+                    // If video overlay was not burned into video, sync its date and GPS so it sits next to the video
+                    if (item.overlayUri != null && !burnVideoOverlays) {
+                        ExifManager.applyMetadataToImage(
+                            context = context,
+                            uri = item.overlayUri!!,
+                            epochMillis = epochMillis,
+                            coordinates = coordinates,
+                            timeZoneId = timeZone
+                        )
                     }
                 } else {
                     val pSuccess = ExifManager.applyMetadataToImage(
