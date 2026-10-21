@@ -11,23 +11,26 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Top Bar: Logo/Name & PRO button -->
+        <!-- Top Bar: Logo, Info Buttons (? and i), and PRO button -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp">
 
+            <!-- App Branding -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
                     android:background="@drawable/bg_card"
-                    android:padding="7dp"
+                    android:padding="8dp"
                     android:src="@drawable/ic_auto_fix"
                     app:tint="@color/primary" />
 
@@ -56,20 +59,65 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPro"
-                style="@style/Widget.Material3.Button.TonalButton"
+            <!-- Actions: ?, i, and PRO -->
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:backgroundTint="@color/chip_bg"
-                android:text="👑 PRO"
-                android:textColor="@color/pro_gold"
-                android:textSize="12sp"
-                app:cornerRadius="18dp"
-                app:strokeColor="@color/pro_gold"
-                app:strokeWidth="1dp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- ? Question Mark Button for 3 Steps -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnHelp"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:backgroundTint="@color/chip_bg"
+                    android:contentDescription="How It Works"
+                    app:cornerRadius="19dp"
+                    app:icon="@drawable/ic_help"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/text_secondary"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="1dp" />
+
+                <!-- i Information Button for Why MemoryFix -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnInfo"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/chip_bg"
+                    android:contentDescription="Why MemoryFix"
+                    app:cornerRadius="19dp"
+                    app:icon="@drawable/ic_info"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/text_secondary"
+                    app:strokeColor="@color/surface_border"
+                    app:strokeWidth="1dp" />
+
+                <!-- PRO Gold Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPro"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/chip_bg"
+                    android:text="👑 PRO"
+                    android:textColor="@color/pro_gold"
+                    android:textSize="12sp"
+                    app:cornerRadius="18dp"
+                    app:strokeColor="@color/pro_gold"
+                    app:strokeWidth="1dp" />
+            </LinearLayout>
         </RelativeLayout>
 
         <!-- Big Primary CTA Card: Select ZIP File(s) -->
@@ -77,9 +125,9 @@
             android:id="@+id/cardSelectZip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             app:cardBackgroundColor="@color/surface_card_elevated"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/primary"
             app:strokeWidth="1.5dp">
@@ -89,24 +137,29 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="26dp">
+                android:padding="28dp">
 
-                <ImageView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                <FrameLayout
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
                     android:background="@drawable/bg_card"
-                    android:contentDescription="Select ZIP"
-                    android:padding="12dp"
-                    android:src="@drawable/ic_auto_fix"
-                    app:tint="@color/primary" />
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="Select ZIP"
+                        android:src="@drawable/ic_auto_fix"
+                        app:tint="@color/primary" />
+                </FrameLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="16dp"
                     android:text="@string/select_zip_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -118,18 +171,19 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
+                <!-- Primary Action Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnChooseZip"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:layout_marginTop="20dp"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="22dp"
                     android:background="@drawable/bg_gradient_btn"
                     android:text="@string/btn_select_zip"
                     android:textColor="@color/on_primary"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null"
-                    app:cornerRadius="27dp"
+                    app:cornerRadius="28dp"
                     app:icon="@drawable/ic_auto_fix"
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
@@ -151,11 +205,11 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Visual Selection Hint -->
+        <!-- Tip Box for multi-part zips -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/bg_tip_card"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -177,255 +231,72 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
-
-        <!-- Visual "Before vs After" Comparison -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="Why You Need MemoryFix"
-            android:textColor="@color/text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
+        <!-- Quick Info Trigger Chips -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="vertical">
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
 
-            <!-- Before Pill -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_pill_before"
-                android:orientation="vertical"
-                android:padding="14dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChipSteps"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/chip_bg"
+                android:text="❓ How It Works"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                app:cornerRadius="21dp"
+                app:strokeColor="@color/surface_border"
+                app:strokeWidth="1dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="❌  WITHOUT FIX (Raw Export)"
-                    android:textColor="#FF8A80"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="• All years of photos lumped under 'Today' in Google Photos\n• No GPS map locations on your photos\n• Captions &amp; sticker overlays saved in separate files"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- After Pill -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_pill_after"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✨  WITH MEMORYFIX (Restored)"
-                    android:textColor="@color/accent"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="• Photos restored to their exact original date and time\n• Latitude &amp; longitude embedded for your photo map\n• Captions &amp; stickers merged directly back onto photos"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChipWhy"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/chip_bg"
+                android:text="ℹ️ Why MemoryFix"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                app:cornerRadius="21dp"
+                app:strokeColor="@color/surface_border"
+                app:strokeWidth="1dp" />
         </LinearLayout>
 
-        <!-- Visual 3-Step Guide -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="3 Simple Steps"
-            android:textColor="@color/text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
+        <View
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Step 1 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_pro_badge"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textColor="@color/on_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Download Snapchat Data"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Request your data export in Snapchat Settings &gt; My Data"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="12dp"
-                android:background="@color/surface_border" />
-
-            <!-- Step 2 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_pro_badge"
-                    android:gravity="center"
-                    android:text="2"
-                    android:textColor="@color/on_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Select ZIP File(s)"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Pick your downloaded ZIP file(s) directly — no unzipping app needed!"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="12dp"
-                android:background="@color/surface_border" />
-
-            <!-- Step 3 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_pro_badge"
-                    android:gravity="center"
-                    android:text="3"
-                    android:textColor="@color/on_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Start &amp; Restore Gallery"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Photos &amp; videos restored with original dates, locations &amp; merged overlays"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <!-- Privacy & Offline Assurance Banner -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="8dp"
             android:background="@drawable/bg_card"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:orientation="horizontal"
-            android:padding="14dp">
+            android:padding="12dp">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:src="@drawable/ic_shield_check"
                 app:tint="@color/accent" />
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="100% Offline &amp; Private. Your photos and memories are processed directly on your device and never uploaded to any server."
+                android:layout_marginStart="8dp"
+                android:text="100% Offline &amp; Private • On-device processing"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>

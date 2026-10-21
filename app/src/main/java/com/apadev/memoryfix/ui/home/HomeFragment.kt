@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.MemoryFixApp
+import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentHomeBinding
 
 import androidx.appcompat.app.AlertDialog
@@ -122,10 +123,46 @@ class HomeFragment : Fragment() {
             selectFolderLauncher.launch(null)
         }
 
+        binding.btnHelp.setOnClickListener {
+            showHowItWorksBottomSheet()
+        }
+
+        binding.btnChipSteps.setOnClickListener {
+            showHowItWorksBottomSheet()
+        }
+
+        binding.btnInfo.setOnClickListener {
+            showWhyMemoryFixBottomSheet()
+        }
+
+        binding.btnChipWhy.setOnClickListener {
+            showWhyMemoryFixBottomSheet()
+        }
+
         binding.btnPro.setOnClickListener {
             val app = requireActivity().application as? MemoryFixApp
             app?.billingManager?.launchBillingFlow(requireActivity())
         }
+    }
+
+    private fun showHowItWorksBottomSheet() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_steps, null)
+        sheetView.findViewById<View>(R.id.btnDismissSteps).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setContentView(sheetView)
+        dialog.show()
+    }
+
+    private fun showWhyMemoryFixBottomSheet() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_why, null)
+        sheetView.findViewById<View>(R.id.btnDismissWhy).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setContentView(sheetView)
+        dialog.show()
     }
 
     override fun onDestroyView() {
