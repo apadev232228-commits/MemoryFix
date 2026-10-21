@@ -16,6 +16,7 @@ import com.apadev.memoryfix.data.DateExtractor
 import com.apadev.memoryfix.data.ExifManager
 import com.apadev.memoryfix.data.MediaScanner
 import com.apadev.memoryfix.data.OverlayCompositor
+import com.apadev.memoryfix.data.ScannedMedia
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +31,7 @@ class ExportProcessWorker(
         const val KEY_EMBED_LOCATION = "KEY_EMBED_LOCATION"
         const val KEY_MERGE_OVERLAYS = "KEY_MERGE_OVERLAYS"
         const val KEY_BURN_VIDEO_OVERLAYS = "KEY_BURN_VIDEO_OVERLAYS"
+        const val KEY_MERGE_VIDEO_CHUNKS = "KEY_MERGE_VIDEO_CHUNKS"
         const val KEY_TIMEZONE = "KEY_TIMEZONE"
 
         const val PROGRESS_CURRENT = "PROGRESS_CURRENT"
@@ -55,6 +57,7 @@ class ExportProcessWorker(
         val embedLocation = inputData.getBoolean(KEY_EMBED_LOCATION, true)
         val mergeOverlays = inputData.getBoolean(KEY_MERGE_OVERLAYS, true)
         val burnVideoOverlays = inputData.getBoolean(KEY_BURN_VIDEO_OVERLAYS, false)
+        val mergeVideoChunks = inputData.getBoolean(KEY_MERGE_VIDEO_CHUNKS, true)
         val timeZone = inputData.getString(KEY_TIMEZONE) ?: "UTC"
 
         val treeUri = Uri.parse(treeUriString)
@@ -101,6 +104,19 @@ class ExportProcessWorker(
             )
         }
 
+        // Identify multi-segment video chunk groups
+        val chunkGroups = if (mergeVideoChunks) MediaScanner.detectVideoChunks(list) else emptyList()
+        val secondaryChunkUris = mutableSetOf<Uri>()
+        val chunkGroupMap = mutableMapOf<Uri, List<ScannedMedia>>()
+
+        for (group in chunkGroups) {
+            val primary = group.first()
+            chunkGroupMap[primary.uri] = group
+            for (i in 1 until group.size) {
+                secondaryChunkUris.add(group[i].uri)
+            }
+        }
+
         // Report total immediately so UI shows progress from the start
         setProgress(
             workDataOf(
@@ -126,6 +142,12 @@ class ExportProcessWorker(
                 return@withContext Result.failure()
             }
 
+            // Skip secondary chunks that are merged into the primary video
+            if (secondaryChunkUris.contains(item.uri)) {
+                processed++
+                continue
+            }
+
             processed++
             val fileName = item.name
 
@@ -138,8 +160,29 @@ class ExportProcessWorker(
             var itemFixed = false
 
             try {
-                // 1. Merge overlay if requested and present
-                if (mergeOverlays && item.overlayUri != null) {
+                // If this is the primary chunk of a multi-part video, merge the entire group
+                val chunkGroup = chunkGroupMap[item.uri]
+                if (chunkGroup != null && chunkGroup.size > 1) {
+                    val chunkItems = chunkGroup.map { c ->
+                        val mEpoch = c.matchedMemory?.parseEpochMillis()
+                            ?: DateExtractor.extractEpochMillisFromFileName(c.name, timeZone)
+                            ?: 0L
+                        com.apadev.memoryfix.data.VideoChunkMerger.ChunkItem(
+                            uri = c.uri,
+                            overlayUri = c.overlayUri,
+                            epochMillis = mEpoch
+                        )
+                    }
+                    val merged = com.apadev.memoryfix.data.VideoChunkMerger.mergeChunksInPlace(
+                        context = context,
+                        chunks = chunkItems,
+                        burnOverlays = burnVideoOverlays
+                    )
+                    if (merged && burnVideoOverlays) {
+                        overlaysMerged += chunkItems.count { it.overlayUri != null }
+                    }
+                } else if (mergeOverlays && item.overlayUri != null) {
+                    // Regular overlay handling for single items
                     if (!item.isVideo) {
                         val merged = OverlayCompositor.compositeInPlace(
                             context = context,

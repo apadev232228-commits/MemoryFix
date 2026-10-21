@@ -8,6 +8,8 @@ data class ScanStats(
     val overlayCount: Int = 0,
     val photoOverlayCount: Int = 0,
     val videoOverlayCount: Int = 0,
+    val videoChunkGroupsCount: Int = 0,
+    val videoChunkFilesCount: Int = 0,
     val duplicateCount: Int = 0,
     val missingMetadataCount: Int = 0,
     val detectedTimezone: String = "UTC",
@@ -21,6 +23,7 @@ data class ProcessingOptions(
     val embedLocation: Boolean = true,
     val mergeOverlays: Boolean = true,
     val burnVideoOverlays: Boolean = false,
+    val mergeVideoChunks: Boolean = true,
     val separateDuplicates: Boolean = true,
     val organizeByMonth: Boolean = false,
     val targetTimeZone: String = "UTC"

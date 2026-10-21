@@ -236,6 +236,10 @@ object MediaScanner {
         val totalFiles = mediaDocs.size
         val estimatedSec = (totalFiles * 0.05).toInt().coerceAtLeast(1)
 
+        val chunkGroups = detectVideoChunks(mediaList)
+        val chunkGroupsCount = chunkGroups.size
+        val chunkFilesCount = chunkGroups.sumOf { it.size }
+
         val stats = ScanStats(
             totalMediaFiles = totalFiles,
             photoCount = photoCount,
@@ -244,6 +248,8 @@ object MediaScanner {
             overlayCount = maxOf(overlayCount, overlayMatchedCount),
             photoOverlayCount = photoOverlayMatchedCount,
             videoOverlayCount = videoOverlayMatchedCount,
+            videoChunkGroupsCount = chunkGroupsCount,
+            videoChunkFilesCount = chunkFilesCount,
             duplicateCount = duplicateCount,
             missingMetadataCount = (totalFiles - matchedCount).coerceAtLeast(0),
             detectedTimezone = detectedTimezone,
@@ -271,6 +277,45 @@ object MediaScanner {
             jsonUri = metadataDocs.firstOrNull()?.uri,
             rootFolderUri = treeUri
         )
+    }
+
+    /**
+     * Detects consecutive video segments (10-second snap chunks recorded back-to-back within <=15s).
+     */
+    fun detectVideoChunks(mediaList: List<ScannedMedia>): List<List<ScannedMedia>> {
+        val videos = mediaList.filter { it.isVideo }
+            .mapNotNull { media ->
+                val epoch = media.matchedMemory?.parseEpochMillis() ?: 0L
+                if (epoch > 0L) epoch to media else null
+            }
+            .sortedBy { it.first }
+
+        val groups = mutableListOf<MutableList<ScannedMedia>>()
+        var currentGroup = mutableListOf<ScannedMedia>()
+        var lastEpoch = -1L
+
+        for ((epoch, media) in videos) {
+            if (currentGroup.isEmpty()) {
+                currentGroup.add(media)
+                lastEpoch = epoch
+            } else {
+                val delta = epoch - lastEpoch
+                if (delta in 1..15_000L) {
+                    currentGroup.add(media)
+                    lastEpoch = epoch
+                } else {
+                    if (currentGroup.size > 1) {
+                        groups.add(currentGroup)
+                    }
+                    currentGroup = mutableListOf(media)
+                    lastEpoch = epoch
+                }
+            }
+        }
+        if (currentGroup.size > 1) {
+            groups.add(currentGroup)
+        }
+        return groups
     }
 
     /**

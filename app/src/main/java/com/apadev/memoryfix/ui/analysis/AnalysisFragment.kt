@@ -232,6 +232,17 @@ class AnalysisFragment : Fragment() {
             binding.cardDuplicates.visibility = View.GONE
         }
 
+        // Multi-Part Video Chunks Toggle: Shown ONLY if consecutive video chunks were detected
+        if (s.videoChunkGroupsCount > 0) {
+            binding.layoutMergeVideoChunksOption.visibility = View.VISIBLE
+            binding.tvMergeVideoChunksTitle.text = "Merge ${s.videoChunkGroupsCount} Multi-Part Videos"
+            binding.tvMergeVideoChunksDesc.text = "Stitches ${s.videoChunkFilesCount} consecutive 10s recording clips into full continuous videos."
+            binding.switchMergeVideoChunks.isChecked = true
+        } else {
+            binding.layoutMergeVideoChunksOption.visibility = View.GONE
+            binding.switchMergeVideoChunks.isChecked = false
+        }
+
         // Mismatch Card: only visible if there is an actual count mismatch or missing metadata file
         if (hasMismatch(s)) {
             binding.cardMismatch.visibility = View.VISIBLE
@@ -342,6 +353,7 @@ class AnalysisFragment : Fragment() {
                 .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, binding.switchLocation.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, binding.switchOverlay.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, binding.switchVideoOverlay.isChecked)
+                .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, binding.switchMergeVideoChunks.isChecked)
                 .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
                 .build()
 
