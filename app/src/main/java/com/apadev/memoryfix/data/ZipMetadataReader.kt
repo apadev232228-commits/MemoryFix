@@ -193,12 +193,10 @@ object ZipMetadataReader {
                     var entry = zis.nextEntry
                     while (entry != null) {
                         val name = entry.name
-                        if (name == entryPath ||
-                            name.endsWith("memories_history.json") ||
-                            name.endsWith("memories_history.html") ||
-                            name.endsWith("memories.json")
-                        ) {
-                            return SnapchatHistoryParser.parse(zis, isHtml = name.endsWith(".html"))
+                        if (name == entryPath || (entryPath.isEmpty() && name.endsWith("memories_history.json", ignoreCase = true))) {
+                            val bytes = zis.readBytes()
+                            val isHtml = name.endsWith(".html", ignoreCase = true)
+                            return SnapchatHistoryParser.parse(bytes.inputStream(), isHtml = isHtml)
                         }
                         entry = zis.nextEntry
                     }

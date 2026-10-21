@@ -335,11 +335,12 @@ object MediaScanner {
                 context.contentResolver.openFileDescriptor(zipUri, "r")?.use { pfd ->
                     val entries = ZipMetadataReader.readAllZipEntriesFromFd(pfd.fileDescriptor, zipUri)
                     allZipEntries.addAll(entries)
-                    for (e in entries) {
-                        if (e.isHistory) {
-                            val parsed = ZipMetadataReader.readHistoryFromZip(context, zipUri, e.entryPath)
-                            historyItems.addAll(parsed)
-                        }
+                    // Prefer JSON history (contains all 1000s of entries) over HTML (which only has 1 sample row)
+                    val historyEntry = entries.find { it.isHistory && it.entryPath.endsWith(".json", ignoreCase = true) }
+                        ?: entries.find { it.isHistory }
+                    if (historyEntry != null) {
+                        val parsed = ZipMetadataReader.readHistoryFromZip(context, zipUri, historyEntry.entryPath)
+                        historyItems.addAll(parsed)
                     }
                 }
             } catch (e: Exception) {
