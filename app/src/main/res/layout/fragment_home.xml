@@ -11,13 +11,13 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Top Bar: Logo, Info Buttons (? and i), and PRO button -->
+        <!-- Top Bar: Logo with PRO badge & Quick Info Actions (? and i) -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp">
 
-            <!-- App Branding -->
+            <!-- App Branding: Icon with PRO badge & Title -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -26,13 +26,50 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <ImageView
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:background="@drawable/bg_card"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_auto_fix"
-                    app:tint="@color/primary" />
+                <!-- App Icon with Overlay PRO Badge (Clickable to trigger PRO flow) -->
+                <FrameLayout
+                    android:id="@+id/btnPro"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <!-- Inner App Icon Container -->
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_card_elevated"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_auto_fix"
+                            app:tint="@color/primary" />
+                    </FrameLayout>
+
+                    <!-- PRO Badge Overlay on App Icon (Top-End Corner) -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="16dp"
+                        android:layout_gravity="top|end"
+                        android:background="@drawable/bg_pro_badge"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="4dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="👑 PRO"
+                            android:textColor="#000000"
+                            android:textSize="8sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </FrameLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -59,7 +96,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Actions: ?, i, and PRO -->
+            <!-- Actions on Right: ? (Steps) and i (Why MemoryFix) -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -72,11 +109,11 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnHelp"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:backgroundTint="@color/chip_bg"
                     android:contentDescription="How It Works"
-                    app:cornerRadius="19dp"
+                    app:cornerRadius="20dp"
                     app:icon="@drawable/ic_help"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
@@ -89,33 +126,18 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnInfo"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginStart="8dp"
                     android:backgroundTint="@color/chip_bg"
                     android:contentDescription="Why MemoryFix"
-                    app:cornerRadius="19dp"
+                    app:cornerRadius="20dp"
                     app:icon="@drawable/ic_info"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
                     app:iconSize="20dp"
                     app:iconTint="@color/text_secondary"
                     app:strokeColor="@color/surface_border"
-                    app:strokeWidth="1dp" />
-
-                <!-- PRO Gold Button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPro"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
-                    android:backgroundTint="@color/chip_bg"
-                    android:text="👑 PRO"
-                    android:textColor="@color/pro_gold"
-                    android:textSize="12sp"
-                    app:cornerRadius="18dp"
-                    app:strokeColor="@color/pro_gold"
                     app:strokeWidth="1dp" />
             </LinearLayout>
         </RelativeLayout>
