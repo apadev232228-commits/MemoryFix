@@ -208,7 +208,7 @@ class AnalysisFragment : Fragment() {
             binding.cardOverlays.visibility = View.VISIBLE
             binding.tvOverlayTitle.text = "${numberFormat.format(s.overlayCount)} Stickers & Captions"
             if (s.videoOverlayCount > 0) {
-                binding.tvOverlaySubtitle.text = "${numberFormat.format(s.photoOverlayCount)} on photos (merged) • ${numberFormat.format(s.videoOverlayCount)} on videos"
+                binding.tvOverlaySubtitle.text = "${numberFormat.format(s.photoOverlayCount)} on photos (will be combined) • ${numberFormat.format(s.videoOverlayCount)} on videos"
                 binding.layoutVideoOverlayOption.visibility = View.VISIBLE
                 binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s per video)."
             } else {
@@ -263,9 +263,16 @@ class AnalysisFragment : Fragment() {
         }
 
         if (s.totalMediaFiles > 0) {
+            val timeEst = if (s.estimatedTimeSeconds >= 60) {
+                val mins = s.estimatedTimeSeconds / 60
+                val secs = s.estimatedTimeSeconds % 60
+                if (secs > 0) "${mins}m ${secs}s" else "${mins} min"
+            } else {
+                "${s.estimatedTimeSeconds}s"
+            }
             binding.btnStartProcessing.isEnabled = true
             binding.btnStartProcessing.alpha = 1.0f
-            binding.btnStartProcessing.text = "Start Fixing Memories (~${s.estimatedTimeSeconds}s)"
+            binding.btnStartProcessing.text = "Start Fixing Memories (~$timeEst)"
         } else {
             binding.btnStartProcessing.isEnabled = false
             binding.btnStartProcessing.alpha = 0.5f
