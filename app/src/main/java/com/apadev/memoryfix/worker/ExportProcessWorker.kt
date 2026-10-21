@@ -106,15 +106,12 @@ class ExportProcessWorker(
 
         // Identify multi-segment video chunk groups
         val chunkGroups = if (mergeVideoChunks) MediaScanner.detectVideoChunks(list) else emptyList()
-        val secondaryChunkUris = mutableSetOf<Uri>()
         val chunkGroupMap = mutableMapOf<Uri, List<ScannedMedia>>()
+        val mergedSecondaryUris = mutableSetOf<Uri>()
 
         for (group in chunkGroups) {
             val primary = group.first()
             chunkGroupMap[primary.uri] = group
-            for (i in 1 until group.size) {
-                secondaryChunkUris.add(group[i].uri)
-            }
         }
 
         // Report total immediately so UI shows progress from the start
@@ -142,8 +139,8 @@ class ExportProcessWorker(
                 return@withContext Result.failure()
             }
 
-            // Skip secondary chunks that are merged into the primary video
-            if (secondaryChunkUris.contains(item.uri)) {
+            // Skip secondary chunks that were successfully merged into their primary video
+            if (mergedSecondaryUris.contains(item.uri)) {
                 processed++
                 continue
             }
@@ -178,8 +175,13 @@ class ExportProcessWorker(
                         chunks = chunkItems,
                         burnOverlays = burnVideoOverlays
                     )
-                    if (merged && burnVideoOverlays) {
-                        overlaysMerged += chunkItems.count { it.overlayUri != null }
+                    if (merged) {
+                        for (i in 1 until chunkGroup.size) {
+                            mergedSecondaryUris.add(chunkGroup[i].uri)
+                        }
+                        if (burnVideoOverlays) {
+                            overlaysMerged += chunkItems.count { it.overlayUri != null }
+                        }
                     }
                 } else if (mergeOverlays && item.overlayUri != null) {
                     // Regular overlay handling for single items

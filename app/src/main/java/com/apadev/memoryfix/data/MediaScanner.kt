@@ -181,8 +181,9 @@ object MediaScanner {
         var photoOverlayMatchedCount = 0
         var videoOverlayMatchedCount = 0
         val mediaList = mutableListOf<ScannedMedia>()
+        val sortedMediaDocs = mediaDocs.sortedBy { it.name ?: "" }
 
-        for ((index, doc) in mediaDocs.withIndex()) {
+        for ((index, doc) in sortedMediaDocs.withIndex()) {
             val name = doc.name ?: continue
             val lower = name.lowercase()
             val ext = lower.substringAfterLast('.', "")
@@ -197,11 +198,29 @@ object MediaScanner {
                 if (isVideo) videoOverlayMatchedCount++ else photoOverlayMatchedCount++
             }
 
+            var fileLastModified = doc.lastModified()
+            val dateKey = DateExtractor.extractDateKey(name)
+            val isDateMatch = if (dateKey != null && fileLastModified > 0) {
+                try {
+                    val zdt = java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(fileLastModified), java.time.ZoneId.of("UTC"))
+                    zdt.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) == dateKey
+                } catch (e: Exception) { false }
+            } else false
+
+            // If lastModified was wiped by Android/MTP or doesn't match the filename's date,
+            // and this is an MP4 video, read the true immutable mvhd creation timestamp
+            if (isVideo && !isDateMatch) {
+                val mvhdEpoch = ExifManager.readMp4CreationEpoch(context, doc.uri)
+                if (mvhdEpoch != null && mvhdEpoch > 0) {
+                    fileLastModified = mvhdEpoch
+                }
+            }
+
             // Tolerance-aware memory matching
             val matched = matcher.findMatch(
                 fileName = name,
                 isVideo = isVideo,
-                fileLastModified = doc.lastModified(),
+                fileLastModified = fileLastModified,
                 timeZoneId = detectedTimezone
             )
             if (matched != null) matchedCount++
@@ -300,7 +319,7 @@ object MediaScanner {
                 lastEpoch = epoch
             } else {
                 val delta = epoch - lastEpoch
-                if (delta in 1..15_000L) {
+                if (delta in 0..60_000L) {
                     currentGroup.add(media)
                     lastEpoch = epoch
                 } else {

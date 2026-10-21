@@ -122,6 +122,10 @@ object VideoChunkMerger {
                     outStream.flush()
                 } ?: return@withContext false
 
+                try {
+                    context.contentResolver.notifyChange(targetUri, null)
+                } catch (e: Exception) { }
+
                 // 2. Delete subsequent chunk files
                 for (i in 1 until chunks.size) {
                     deleteFileSilently(context, chunks[i].uri)
@@ -136,6 +140,7 @@ object VideoChunkMerger {
 
                 true
             } else {
+                android.util.Log.e("VideoChunkMerger", "Merge failed or empty output file for chunks: ${chunks.map { it.uri }}")
                 false
             }
         } catch (e: Exception) {
