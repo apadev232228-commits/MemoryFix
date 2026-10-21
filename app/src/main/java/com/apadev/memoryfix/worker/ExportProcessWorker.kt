@@ -72,19 +72,24 @@ class ExportProcessWorker(
         }
 
         val scope = this
-        val scanResult = MediaScanner.scanTree(context, treeUri, targetTimeZone = timeZone) { scanProgress ->
-            if (scanProgress.totalFound > 0 && scanProgress.totalFound % 15 == 0) {
-                scope.launch {
-                    setProgress(
-                        workDataOf(
-                            PROGRESS_CURRENT to 0,
-                            PROGRESS_TOTAL to scanProgress.totalFound,
-                            PROGRESS_FILE to if (scanProgress.isMatchingPhase) "Matching timeline history..." else "Indexing memories: ${scanProgress.totalFound} found...",
-                            PROGRESS_PHOTOS to 0,
-                            PROGRESS_VIDEOS to 0,
-                            PROGRESS_OVERLAYS to 0
+        val cached = MediaScanner.lastScanResult
+        val scanResult = if (cached != null && cached.rootFolderUri == treeUri && cached.mediaList.isNotEmpty()) {
+            cached
+        } else {
+            MediaScanner.scanTree(context, treeUri, targetTimeZone = timeZone) { scanProgress ->
+                if (scanProgress.totalFound > 0 && scanProgress.totalFound % 15 == 0) {
+                    scope.launch {
+                        setProgress(
+                            workDataOf(
+                                PROGRESS_CURRENT to 0,
+                                PROGRESS_TOTAL to scanProgress.totalFound,
+                                PROGRESS_FILE to if (scanProgress.isMatchingPhase) "Matching timeline history..." else "Indexing memories: ${scanProgress.totalFound} found...",
+                                PROGRESS_PHOTOS to 0,
+                                PROGRESS_VIDEOS to 0,
+                                PROGRESS_OVERLAYS to 0
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -161,7 +166,8 @@ class ExportProcessWorker(
                 val chunkGroup = chunkGroupMap[item.uri]
                 if (chunkGroup != null && chunkGroup.size > 1) {
                     val chunkItems = chunkGroup.map { c ->
-                        val mEpoch = c.matchedMemory?.parseEpochMillis()
+                        val mEpoch = c.mp4Meta?.creationEpochMillis
+                            ?: c.matchedMemory?.parseEpochMillis()
                             ?: DateExtractor.extractEpochMillisFromFileName(c.name, timeZone)
                             ?: 0L
                         com.apadev.memoryfix.data.VideoChunkMerger.ChunkItem(
@@ -175,6 +181,7 @@ class ExportProcessWorker(
                         chunks = chunkItems,
                         burnOverlays = burnVideoOverlays
                     )
+
                     if (merged) {
                         for (i in 1 until chunkGroup.size) {
                             mergedSecondaryUris.add(chunkGroup[i].uri)

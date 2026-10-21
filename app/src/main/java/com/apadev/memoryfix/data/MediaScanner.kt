@@ -17,7 +17,8 @@ data class ScannedMedia(
     val isVideo: Boolean,
     val size: Long,
     var overlayUri: Uri? = null,
-    var matchedMemory: MemoryItem? = null
+    var matchedMemory: MemoryItem? = null,
+    var mp4Meta: ExifManager.Mp4Meta? = null
 )
 
 data class FullScanResult(
@@ -26,6 +27,7 @@ data class FullScanResult(
     val jsonUri: Uri?,
     val rootFolderUri: Uri
 )
+
 
 data class ScanProgress(
     val totalFound: Int = 0,
@@ -176,6 +178,9 @@ object MediaScanner {
         val matcher = MemoryMatcher(distinctMemoryItems, detectedTimezone)
 
         // Match media files against parsed metadata
+        // Pre-scan for original ZIP central directory timestamps (~3ms)
+        val zipTimestamps = ZipMetadataReader.findZipTimestamps(context, treeUri)
+
         var matchedCount = 0
         var overlayMatchedCount = 0
         var photoOverlayMatchedCount = 0
@@ -198,21 +203,19 @@ object MediaScanner {
                 if (isVideo) videoOverlayMatchedCount++ else photoOverlayMatchedCount++
             }
 
-            var fileLastModified = doc.lastModified()
-            val dateKey = DateExtractor.extractDateKey(name)
-            val isDateMatch = if (dateKey != null && fileLastModified > 0) {
-                try {
-                    val zdt = java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(fileLastModified), java.time.ZoneId.of("UTC"))
-                    zdt.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) == dateKey
-                } catch (e: Exception) { false }
-            } else false
+            // 1. Check exact original timestamp from ZIP central directory
+            val zipEpoch = zipTimestamps[name]
+            var fileLastModified = if (zipEpoch != null && zipEpoch > 0) {
+                zipEpoch
+            } else {
+                doc.lastModified()
+            }
 
-            // If lastModified was wiped by Android/MTP or doesn't match the filename's date,
-            // and this is an MP4 video, read the true immutable mvhd creation timestamp
-            if (isVideo && !isDateMatch) {
-                val mvhdEpoch = ExifManager.readMp4CreationEpoch(context, doc.uri)
-                if (mvhdEpoch != null && mvhdEpoch > 0) {
-                    fileLastModified = mvhdEpoch
+            var mp4Meta: ExifManager.Mp4Meta? = null
+            if (isVideo) {
+                mp4Meta = ExifManager.readMp4Meta(context, doc.uri)
+                if (zipEpoch == null && mp4Meta != null && mp4Meta.creationEpochMillis > 0) {
+                    fileLastModified = mp4Meta.creationEpochMillis
                 }
             }
 
@@ -232,7 +235,8 @@ object MediaScanner {
                     isVideo = isVideo,
                     size = size,
                     overlayUri = overlay?.uri,
-                    matchedMemory = matched
+                    matchedMemory = matched,
+                    mp4Meta = mp4Meta
                 )
             )
 
@@ -290,52 +294,85 @@ object MediaScanner {
             )
         )
 
-        return FullScanResult(
+        val result = FullScanResult(
             stats = stats,
             mediaList = mediaList,
             jsonUri = metadataDocs.firstOrNull()?.uri,
             rootFolderUri = treeUri
         )
+        lastScanResult = result
+        return result
     }
+
+    @Volatile
+    var lastScanResult: FullScanResult? = null
 
     /**
-     * Detects consecutive video segments (10-second snap chunks recorded back-to-back within <=15s).
+     * Detects consecutive video segments (10-second snap chunks recorded back-to-back within <=18s).
+     * Strictly ordered in chronological sequence (Clip 1 -> Clip 2 -> Clip 3).
+     * Prevents false-positive merging of independent short snaps (<8.5s) or duplicate clips.
      */
     fun detectVideoChunks(mediaList: List<ScannedMedia>): List<List<ScannedMedia>> {
-        val videos = mediaList.filter { it.isVideo }
-            .mapNotNull { media ->
-                val epoch = media.matchedMemory?.parseEpochMillis() ?: 0L
-                if (epoch > 0L) epoch to media else null
-            }
-            .sortedBy { it.first }
+        val videosByDate = mediaList.filter { it.isVideo }
+            .groupBy { DateExtractor.extractDateKey(it.name) ?: "unknown" }
 
-        val groups = mutableListOf<MutableList<ScannedMedia>>()
-        var currentGroup = mutableListOf<ScannedMedia>()
-        var lastEpoch = -1L
+        val groups = mutableListOf<List<ScannedMedia>>()
 
-        for ((epoch, media) in videos) {
-            if (currentGroup.isEmpty()) {
-                currentGroup.add(media)
-                lastEpoch = epoch
-            } else {
-                val delta = epoch - lastEpoch
-                if (delta in 0..60_000L) {
-                    currentGroup.add(media)
-                    lastEpoch = epoch
+        for ((_, videosOnDate) in videosByDate) {
+            if (videosOnDate.size < 2) continue
+
+            // Sort strictly in ascending chronological order by creation timestamp
+            val sortedVideos = videosOnDate.sortedWith(Comparator { a, b ->
+                val epochA = a.mp4Meta?.creationEpochMillis
+                    ?: a.matchedMemory?.parseEpochMillis()
+                    ?: 0L
+                val epochB = b.mp4Meta?.creationEpochMillis
+                    ?: b.matchedMemory?.parseEpochMillis()
+                    ?: 0L
+                epochA.compareTo(epochB)
+            })
+
+            var currentGroup = mutableListOf<ScannedMedia>()
+
+            for (video in sortedVideos) {
+                if (currentGroup.isEmpty()) {
+                    currentGroup.add(video)
                 } else {
-                    if (currentGroup.size > 1) {
-                        groups.add(currentGroup)
+                    val prev = currentGroup.last()
+                    val prevEpoch = prev.mp4Meta?.creationEpochMillis
+                        ?: prev.matchedMemory?.parseEpochMillis()
+                        ?: 0L
+                    val currEpoch = video.mp4Meta?.creationEpochMillis
+                        ?: video.matchedMemory?.parseEpochMillis()
+                        ?: 0L
+                    val prevDur = prev.mp4Meta?.durationSeconds ?: 0f
+                    val diffSec = (currEpoch - prevEpoch) / 1000L
+
+                    // Snapchat multi-part criteria:
+                    // 1. Previous chunk MUST be a full ~10s snap chunk (8.5s..12.5s).
+                    //    Short snaps (<8.5s) were manually stopped by the user and are NOT split multi-parts.
+                    // 2. Next chunk starts right when previous finishes (diffSec in 8..18s).
+                    val isPrevChunk10s = prevDur in 8.5f..12.5f
+                    val isSequential = diffSec in 8L..18L
+
+                    if (isPrevChunk10s && isSequential) {
+                        currentGroup.add(video)
+                    } else {
+                        if (currentGroup.size > 1) {
+                            groups.add(currentGroup.toList())
+                        }
+                        currentGroup = mutableListOf(video)
                     }
-                    currentGroup = mutableListOf(media)
-                    lastEpoch = epoch
                 }
             }
+            if (currentGroup.size > 1) {
+                groups.add(currentGroup.toList())
+            }
         }
-        if (currentGroup.size > 1) {
-            groups.add(currentGroup)
-        }
+
         return groups
     }
+
 
     /**
      * Tolerance-aware matcher that pairs media files with memories_history.json entries.

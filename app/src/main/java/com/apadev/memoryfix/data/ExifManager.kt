@@ -62,80 +62,66 @@ object ExifManager {
         }
     }
 
+    data class Mp4Meta(
+        val creationEpochMillis: Long,
+        val durationSeconds: Float
+    )
+
     /**
-     * Reads creation timestamp from the MP4 mvhd atom via FileDescriptor.
-     * This provides the original recording timestamp even if Android MTP or extraction
-     * reset the filesystem lastModified date.
+     * Reads creation timestamp and duration from the MP4 mvhd atom via FileDescriptor.
+     * Uses a fast 64KB buffer (mvhd is located at byte ~36 in Snapchat MP4 files).
      */
-    fun readMp4CreationEpoch(context: Context, uri: Uri): Long? {
+    fun readMp4Meta(context: Context, uri: Uri): Mp4Meta? {
         return try {
             context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
                 val inChannel = FileInputStream(pfd.fileDescriptor).channel
                 val fileSize = inChannel.size()
                 if (fileSize < 16) return null
 
-                val headLimit = Math.min(fileSize, 2 * 1024 * 1024L).toInt()
+                val headLimit = Math.min(fileSize, 65536L).toInt()
                 val headBuffer = ByteBuffer.allocate(headLimit)
                 inChannel.position(0)
                 inChannel.read(headBuffer)
                 headBuffer.flip()
                 val headBytes = headBuffer.array()
 
-                var mvhdAbsolutePos = -1L
+                var mvhdPos = -1
                 var mvhdVersion = 0
 
-                for (i in 0 until headBytes.size - 8) {
+                for (i in 0 until headBuffer.limit() - 8) {
                     if (headBytes[i] == 0x6D.toByte() &&
                         headBytes[i + 1] == 0x76.toByte() &&
                         headBytes[i + 2] == 0x68.toByte() &&
                         headBytes[i + 3] == 0x64.toByte()
                     ) {
-                        mvhdAbsolutePos = i.toLong()
+                        mvhdPos = i
                         mvhdVersion = headBytes[i + 4].toInt()
                         break
                     }
                 }
 
-                if (mvhdAbsolutePos == -1L && fileSize > headLimit) {
-                    val tailSize = Math.min(fileSize - headLimit, 2 * 1024 * 1024L).toInt()
-                    val tailStart = fileSize - tailSize
-                    val tailBuffer = ByteBuffer.allocate(tailSize)
-                    inChannel.position(tailStart)
-                    inChannel.read(tailBuffer)
-                    tailBuffer.flip()
-                    val tailBytes = tailBuffer.array()
-
-                    for (i in 0 until tailBytes.size - 8) {
-                        if (tailBytes[i] == 0x6D.toByte() &&
-                            tailBytes[i + 1] == 0x76.toByte() &&
-                            tailBytes[i + 2] == 0x68.toByte() &&
-                            tailBytes[i + 3] == 0x64.toByte()
-                        ) {
-                            mvhdAbsolutePos = tailStart + i
-                            mvhdVersion = tailBytes[i + 4].toInt()
-                            break
-                        }
-                    }
-                }
-
-                if (mvhdAbsolutePos != -1L) {
-                    val readPos = mvhdAbsolutePos + 8
-                    inChannel.position(readPos)
+                if (mvhdPos != -1) {
                     val mp4EpochOffset = 2082844800L
-                    if (mvhdVersion == 0) {
-                        val buf = ByteBuffer.allocate(4)
-                        inChannel.read(buf)
-                        buf.flip()
-                        val creation = buf.int.toLong() and 0xFFFFFFFFL
+                    if (mvhdVersion == 0 && mvhdPos + 8 + 16 <= headBuffer.limit()) {
+                        headBuffer.position(mvhdPos + 8)
+                        val creation = headBuffer.int.toLong() and 0xFFFFFFFFL
+                        headBuffer.int // modification
+                        val timescale = headBuffer.int.toLong() and 0xFFFFFFFFL
+                        val duration = headBuffer.int.toLong() and 0xFFFFFFFFL
+
                         val epochSec = creation - mp4EpochOffset
-                        if (epochSec > 0) return epochSec * 1000L
-                    } else if (mvhdVersion == 1) {
-                        val buf = ByteBuffer.allocate(8)
-                        inChannel.read(buf)
-                        buf.flip()
-                        val creation = buf.long
+                        val durSec = if (timescale > 0) duration.toFloat() / timescale else 0f
+                        if (epochSec > 0) return Mp4Meta(epochSec * 1000L, durSec)
+                    } else if (mvhdVersion == 1 && mvhdPos + 8 + 28 <= headBuffer.limit()) {
+                        headBuffer.position(mvhdPos + 8)
+                        val creation = headBuffer.long
+                        headBuffer.long // modification
+                        val timescale = headBuffer.int.toLong() and 0xFFFFFFFFL
+                        val duration = headBuffer.long
+
                         val epochSec = creation - mp4EpochOffset
-                        if (epochSec > 0) return epochSec * 1000L
+                        val durSec = if (timescale > 0) duration.toFloat() / timescale else 0f
+                        if (epochSec > 0) return Mp4Meta(epochSec * 1000L, durSec)
                     }
                 }
                 null
@@ -144,6 +130,11 @@ object ExifManager {
             null
         }
     }
+
+    fun readMp4CreationEpoch(context: Context, uri: Uri): Long? {
+        return readMp4Meta(context, uri)?.creationEpochMillis
+    }
+
 
     private fun patchMp4Timestamp(fd: FileDescriptor, epochMillis: Long): Boolean {
         return try {
