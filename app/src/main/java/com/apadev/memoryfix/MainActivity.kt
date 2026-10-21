@@ -74,6 +74,13 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
+    fun navigateToAnalysisWithZips(zipUris: List<Uri>) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, AnalysisFragment.newInstanceWithZips(zipUris))
+            .addToBackStack("analysis")
+            .commit()
+    }
+
     fun navigateToProcessing() {
         // Clear the analysis from back stack so back from processing doesn't go to analysis
         supportFragmentManager.popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)

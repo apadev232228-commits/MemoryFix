@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">MemoryFix</string>
     <string name="app_tagline">Restore original dates, locations &amp; overlays to your exported photos</string>
+    <string name="select_zip_title">Select Snapchat ZIP(s)</string>
+    <string name="select_zip_desc">Directly pick your downloaded Snapchat .zip file(s). No unzipping app needed!</string>
+    <string name="btn_select_zip">Select Snapchat ZIP(s)</string>
+    <string name="btn_select_extracted_folder">Or Select Extracted Folder</string>
     <string name="select_folder_title">Select Export Folder</string>
     <string name="select_folder_desc">Pick the extracted folder containing your exported media and memories_history.json</string>
     <string name="btn_select_folder">Select Export Folder</string>

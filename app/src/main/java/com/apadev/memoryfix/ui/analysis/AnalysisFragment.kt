@@ -33,11 +33,13 @@ class AnalysisFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var folderUri: Uri? = null
+    private var zipUris: List<Uri>? = null
     private var scanResult: FullScanResult? = null
     private var selectedTimezone: String = TimeZone.getDefault().id
 
     companion object {
         private const val ARG_FOLDER_URI = "ARG_FOLDER_URI"
+        private const val ARG_ZIP_URIS = "ARG_ZIP_URIS"
 
         fun newInstance(uri: Uri): AnalysisFragment {
             return AnalysisFragment().apply {
@@ -46,15 +48,26 @@ class AnalysisFragment : Fragment() {
                 }
             }
         }
+
+        fun newInstanceWithZips(uris: List<Uri>): AnalysisFragment {
+            return AnalysisFragment().apply {
+                arguments = Bundle().apply {
+                    putParcelableArrayList(ARG_ZIP_URIS, ArrayList(uris))
+                }
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        folderUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            arguments?.getParcelable(ARG_FOLDER_URI, Uri::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            folderUri = arguments?.getParcelable(ARG_FOLDER_URI, Uri::class.java)
+            zipUris = arguments?.getParcelableArrayList(ARG_ZIP_URIS, Uri::class.java)
         } else {
             @Suppress("DEPRECATION")
-            arguments?.getParcelable(ARG_FOLDER_URI)
+            folderUri = arguments?.getParcelable(ARG_FOLDER_URI)
+            @Suppress("DEPRECATION")
+            zipUris = arguments?.getParcelableArrayList(ARG_ZIP_URIS)
         }
     }
 
@@ -69,10 +82,11 @@ class AnalysisFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val uri = folderUri ?: return
+        val isZipSource = !zipUris.isNullOrEmpty()
+        if (folderUri == null && !isZipSource) return
 
         binding.tvCurrentTimezone.text = selectedTimezone
-        binding.tvFolderScanStatus.text = "Scanning export folder..."
+        binding.tvFolderScanStatus.text = if (isZipSource) "Scanning Snapchat ZIP archives..." else "Scanning export folder..."
         binding.progressScan.visibility = View.VISIBLE
         binding.ivScanComplete.visibility = View.GONE
         binding.btnStartProcessing.isEnabled = false
@@ -81,57 +95,20 @@ class AnalysisFragment : Fragment() {
         // Start scanning with real-time live progress updates
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                MediaScanner.scanTree(requireContext(), uri, selectedTimezone) { progress ->
-                    if (!progress.isComplete && scanResult == null) {
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (_binding != null && scanResult == null) {
-                                val numberFormat = NumberFormat.getIntegerInstance()
-                                binding.tvTotalFiles.text = numberFormat.format(progress.totalFound)
-                                binding.tvPhotoCount.text = "${numberFormat.format(progress.photosFound)} Photos"
-                                binding.tvVideoCount.text = "${numberFormat.format(progress.videosFound)} Videos"
-
-                                if (progress.totalFound > 0) {
-                                    val photoPct = (progress.photosFound * 100) / progress.totalFound
-                                    val videoPct = 100 - photoPct
-                                    binding.tvPhotoPercentage.text = "$photoPct%"
-                                    binding.tvVideoPercentage.text = "$videoPct%"
-
-                                    binding.layoutDistributionBar.visibility = View.VISIBLE
-                                    val photoWeight = maxOf(progress.photosFound.toFloat(), 0.01f)
-                                    val videoWeight = maxOf(progress.videosFound.toFloat(), 0.01f)
-                                    binding.viewPhotoRatio.layoutParams =
-                                        (binding.viewPhotoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                                            weight = photoWeight
-                                        }
-                                    binding.viewVideoRatio.layoutParams =
-                                        (binding.viewVideoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                                            weight = videoWeight
-                                        }
-                                }
-
-                                if (progress.overlaysFound > 0) {
-                                    binding.cardOverlays.visibility = View.VISIBLE
-                                    binding.tvOverlayTitle.text = "${numberFormat.format(progress.overlaysFound)} Stickers & Captions"
-                                }
-
-                                if (progress.duplicatesFound > 0) {
-                                    binding.cardDuplicates.visibility = View.VISIBLE
-                                    binding.tvDuplicateTitle.text = "${numberFormat.format(progress.duplicatesFound)} Duplicate Files Found"
-                                }
-
-                                if (progress.isMatchingPhase) {
-                                    binding.tvFolderScanStatus.text = "Preparing memories: ${progress.matchedCount} of ${progress.totalFound}..."
-                                } else {
-                                    binding.tvFolderScanStatus.text = "Scanning: ${numberFormat.format(progress.totalFound)} items found..."
-                                }
-                            }
-                        }
+                if (isZipSource) {
+                    MediaScanner.scanZipUris(requireContext(), zipUris!!, selectedTimezone) { progress ->
+                        updateProgressUI(progress)
+                    }
+                } else {
+                    MediaScanner.scanTree(requireContext(), folderUri!!, selectedTimezone) { progress ->
+                        updateProgressUI(progress)
                     }
                 }
             }
             scanResult = result
             populateStats(result)
         }
+
 
         binding.btnChangeTimezone.setOnClickListener {
             showTimezoneDialog()
@@ -349,23 +326,80 @@ class AnalysisFragment : Fragment() {
             .show()
     }
 
+    private fun updateProgressUI(progress: com.apadev.memoryfix.data.ScanProgress) {
+        if (!progress.isComplete && scanResult == null) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                if (_binding != null && scanResult == null) {
+                    val numberFormat = NumberFormat.getIntegerInstance()
+                    binding.tvTotalFiles.text = numberFormat.format(progress.totalFound)
+                    binding.tvPhotoCount.text = "${numberFormat.format(progress.photosFound)} Photos"
+                    binding.tvVideoCount.text = "${numberFormat.format(progress.videosFound)} Videos"
+
+                    if (progress.totalFound > 0) {
+                        val photoPct = (progress.photosFound * 100) / progress.totalFound
+                        val videoPct = 100 - photoPct
+                        binding.tvPhotoPercentage.text = "$photoPct%"
+                        binding.tvVideoPercentage.text = "$videoPct%"
+
+                        binding.layoutDistributionBar.visibility = View.VISIBLE
+                        val photoWeight = maxOf(progress.photosFound.toFloat(), 0.01f)
+                        val videoWeight = maxOf(progress.videosFound.toFloat(), 0.01f)
+                        binding.viewPhotoRatio.layoutParams =
+                            (binding.viewPhotoRatio.layoutParams as LinearLayout.LayoutParams).apply {
+                                weight = photoWeight
+                            }
+                        binding.viewVideoRatio.layoutParams =
+                            (binding.viewVideoRatio.layoutParams as LinearLayout.LayoutParams).apply {
+                                weight = videoWeight
+                            }
+                    }
+
+                    if (progress.overlaysFound > 0) {
+                        binding.cardOverlays.visibility = View.VISIBLE
+                        binding.tvOverlayTitle.text = "${numberFormat.format(progress.overlaysFound)} Stickers & Captions"
+                    }
+
+                    if (progress.duplicatesFound > 0) {
+                        binding.cardDuplicates.visibility = View.VISIBLE
+                        binding.tvDuplicateTitle.text = "${numberFormat.format(progress.duplicatesFound)} Duplicate Files Found"
+                    }
+
+                    if (progress.isMatchingPhase) {
+                        binding.tvFolderScanStatus.text = "Preparing memories: ${progress.matchedCount} of ${progress.totalFound}..."
+                    } else {
+                        binding.tvFolderScanStatus.text = "Scanning: ${numberFormat.format(progress.totalFound)} items found..."
+                    }
+                }
+            }
+        }
+    }
+
     private fun startProcessing() {
-        val uri = folderUri ?: return
+        val isZipSource = !zipUris.isNullOrEmpty()
+        if (folderUri == null && !isZipSource) return
+
         val app = requireActivity().application as? MemoryFixApp
         val isPro = app?.billingManager?.isPro?.value ?: false
 
         AdManager.showInterstitial(requireActivity(), isPro) {
-            val workData = Data.Builder()
-                .putString(ExportProcessWorker.KEY_TREE_URI, uri.toString())
+            val workDataBuilder = Data.Builder()
                 .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, binding.switchLocation.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, binding.switchOverlay.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, binding.switchVideoOverlay.isChecked)
                 .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, binding.switchMergeVideoChunks.isChecked)
                 .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
-                .build()
+
+            if (isZipSource) {
+                workDataBuilder.putStringArray(
+                    ExportProcessWorker.KEY_ZIP_URIS,
+                    zipUris!!.map { it.toString() }.toTypedArray()
+                )
+            } else if (folderUri != null) {
+                workDataBuilder.putString(ExportProcessWorker.KEY_TREE_URI, folderUri.toString())
+            }
 
             val workRequest = OneTimeWorkRequestBuilder<ExportProcessWorker>()
-                .setInputData(workData)
+                .setInputData(workDataBuilder.build())
                 .build()
 
             WorkManager.getInstance(requireContext()).enqueueUniqueWork(
@@ -377,6 +411,7 @@ class AnalysisFragment : Fragment() {
             (activity as? MainActivity)?.navigateToProcessing()
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

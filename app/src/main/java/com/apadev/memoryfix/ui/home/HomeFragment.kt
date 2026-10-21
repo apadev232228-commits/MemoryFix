@@ -18,6 +18,24 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    private val selectZipLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            for (uri in uris) {
+                try {
+                    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    requireContext().contentResolver.takePersistableUriPermission(uri, flags)
+                } catch (e: Exception) {
+                    // Ignore permission error if already granted or restricted
+                }
+            }
+            (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
+        } else {
+            Toast.makeText(requireContext(), "No ZIP file selected", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private val selectFolderLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
@@ -46,11 +64,22 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.btnChooseFolder.setOnClickListener {
-            selectFolderLauncher.launch(null)
+        val zipMimeTypes = arrayOf(
+            "application/zip",
+            "application/x-zip-compressed",
+            "application/octet-stream",
+            "*/*"
+        )
+
+        binding.btnChooseZip.setOnClickListener {
+            selectZipLauncher.launch(zipMimeTypes)
         }
 
-        binding.cardSelectFolder.setOnClickListener {
+        binding.cardSelectZip.setOnClickListener {
+            selectZipLauncher.launch(zipMimeTypes)
+        }
+
+        binding.btnChooseFolder.setOnClickListener {
             selectFolderLauncher.launch(null)
         }
 

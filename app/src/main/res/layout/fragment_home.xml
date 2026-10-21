@@ -72,9 +72,9 @@
                 app:strokeWidth="1dp" />
         </RelativeLayout>
 
-        <!-- Big Primary CTA Card: Select Export Folder -->
+        <!-- Big Primary CTA Card: Select ZIP File(s) -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardSelectFolder"
+            android:id="@+id/cardSelectZip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -95,16 +95,16 @@
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:background="@drawable/bg_card"
-                    android:contentDescription="Select Folder"
+                    android:contentDescription="Select ZIP"
                     android:padding="12dp"
-                    android:src="@drawable/ic_folder_open"
+                    android:src="@drawable/ic_auto_fix"
                     app:tint="@color/primary" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:text="@string/select_folder_title"
+                    android:text="@string/select_zip_title"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -114,31 +114,44 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:gravity="center"
-                    android:text="Choose the unzipped folder containing your memories and data files"
+                    android:text="@string/select_zip_desc"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnChooseFolder"
+                    android:id="@+id/btnChooseZip"
                     android:layout_width="match_parent"
                     android:layout_height="54dp"
                     android:layout_marginTop="20dp"
                     android:background="@drawable/bg_gradient_btn"
-                    android:text="@string/btn_select_folder"
+                    android:text="@string/btn_select_zip"
                     android:textColor="@color/on_primary"
                     android:textSize="15sp"
                     android:textStyle="bold"
                     app:backgroundTint="@null"
                     app:cornerRadius="27dp"
-                    app:icon="@drawable/ic_folder_open"
+                    app:icon="@drawable/ic_auto_fix"
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
                     app:iconTint="@color/on_primary" />
 
+                <!-- Secondary Option: Or select unzipped folder -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChooseFolder"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_select_extracted_folder"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    app:icon="@drawable/ic_folder_open"
+                    app:iconTint="@color/primary" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Visual Folder Selection Hint -->
+        <!-- Visual Selection Hint -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -159,10 +172,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_weight="1"
-                android:text="Tip: Make sure to unzip/extract your downloaded archive first, then pick the folder with memories_history.json."
-                android:textColor="@color/text_primary"
+                android:text="Tip: If your export has multiple parts (e.g. zip-1 and zip-2), select both ZIP files together to restore your entire timeline!"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
+
 
         <!-- Visual "Before vs After" Comparison -->
         <TextView
@@ -277,7 +291,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Download &amp; Unzip"
+                        android:text="Download Snapchat Data"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -286,7 +300,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Export your data archive and extract the ZIP file on your device"
+                        android:text="Request your data export in Snapchat Settings &gt; My Data"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -325,7 +339,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Select the Folder"
+                        android:text="Select ZIP File(s)"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -334,7 +348,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Pick the extracted folder above — we scan and match everything"
+                        android:text="Pick your downloaded ZIP file(s) directly — no unzipping app needed!"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -373,7 +387,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tap Start &amp; View Gallery"
+                        android:text="Start &amp; Restore Gallery"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -382,7 +396,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Watch dates &amp; locations restore directly into your photos"
+                        android:text="Photos &amp; videos restored with original dates, locations &amp; merged overlays"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>

@@ -18,15 +18,20 @@ data class ScannedMedia(
     val size: Long,
     var overlayUri: Uri? = null,
     var matchedMemory: MemoryItem? = null,
-    var mp4Meta: ExifManager.Mp4Meta? = null
+    var mp4Meta: ExifManager.Mp4Meta? = null,
+    var zipEntryPath: String? = null,
+    var zipUri: Uri? = null
 )
 
 data class FullScanResult(
     val stats: ScanStats,
     val mediaList: List<ScannedMedia>,
     val jsonUri: Uri?,
-    val rootFolderUri: Uri
+    val rootFolderUri: Uri,
+    val zipUris: List<Uri> = emptyList(),
+    val isZipSource: Boolean = false
 )
+
 
 
 data class ScanProgress(
@@ -304,8 +309,169 @@ object MediaScanner {
         return result
     }
 
+    /**
+     * Scans one or multiple Snapchat export ZIP files directly without requiring manual extraction.
+     * Extracts exact timestamps, matches history metadata, and groups multi-part video chunks.
+     */
+    fun scanZipUris(
+        context: Context,
+        zipUris: List<Uri>,
+        targetTimeZone: String = TimeZone.getDefault().id,
+        onProgress: ((ScanProgress) -> Unit)? = null
+    ): FullScanResult {
+        val allZipEntries = mutableListOf<ZipEntryInfo>()
+        val historyItems = mutableListOf<MemoryItem>()
+
+        onProgress?.invoke(
+            ScanProgress(
+                totalFound = 0,
+                currentFileName = "Reading Snapchat ZIP archives...",
+                isMatchingPhase = false
+            )
+        )
+
+        for (zipUri in zipUris) {
+            try {
+                context.contentResolver.openFileDescriptor(zipUri, "r")?.use { pfd ->
+                    val entries = ZipMetadataReader.readAllZipEntriesFromFd(pfd.fileDescriptor, zipUri)
+                    allZipEntries.addAll(entries)
+                    for (e in entries) {
+                        if (e.isHistory) {
+                            val parsed = ZipMetadataReader.readHistoryFromZip(context, zipUri, e.entryPath)
+                            historyItems.addAll(parsed)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        val overlayEntries = mutableMapOf<String, ZipEntryInfo>()
+        val mediaEntries = mutableListOf<ZipEntryInfo>()
+        var photoCount = 0
+        var videoCount = 0
+        var overlayCount = 0
+        val sizeMap = mutableMapOf<Long, Int>()
+        var duplicateCount = 0
+
+        for (entry in allZipEntries) {
+            if (entry.isOverlay) {
+                overlayCount++
+                val baseKey = extractCanonicalBaseKey(entry.baseName)
+                overlayEntries[baseKey] = entry
+            } else if (!entry.isHistory && entry.entryPath.startsWith("memories/")) {
+                val ext = entry.baseName.substringAfterLast('.', "").lowercase()
+                if (IMAGE_EXTENSIONS.contains(ext) || VIDEO_EXTENSIONS.contains(ext)) {
+                    if (entry.isVideo) videoCount++ else photoCount++
+                    mediaEntries.add(entry)
+
+                    val size = entry.uncompressedSize
+                    val seen = sizeMap.getOrDefault(size, 0)
+                    if (seen > 0) duplicateCount++
+                    sizeMap[size] = seen + 1
+                }
+            }
+        }
+
+        val totalMedia = mediaEntries.size
+        val distinctHistory = historyItems.distinctBy { "${it.dateString}_${it.mediaType}_${it.locationString}" }
+        val matcher = MemoryMatcher(distinctHistory, targetTimeZone)
+
+        var matchedCount = 0
+        var photoOverlayMatchedCount = 0
+        var videoOverlayMatchedCount = 0
+        val mediaList = mutableListOf<ScannedMedia>()
+
+        // Sort entries by exact ZIP timestamp
+        val sortedEntries = mediaEntries.sortedWith(Comparator { a, b ->
+            if (a.epochMillis != b.epochMillis) {
+                a.epochMillis.compareTo(b.epochMillis)
+            } else {
+                a.baseName.compareTo(b.baseName)
+            }
+        })
+
+        for ((index, entry) in sortedEntries.withIndex()) {
+            val baseKey = extractCanonicalBaseKey(entry.baseName)
+            val overlay = overlayEntries[baseKey]
+            if (overlay != null) {
+                if (entry.isVideo) videoOverlayMatchedCount++ else photoOverlayMatchedCount++
+            }
+
+            val matched = matcher.findMatch(
+                fileName = entry.baseName,
+                isVideo = entry.isVideo,
+                fileLastModified = entry.epochMillis,
+                timeZoneId = targetTimeZone
+            )
+            if (matched != null) matchedCount++
+
+            val media = ScannedMedia(
+                uri = entry.zipUri,
+                name = entry.baseName,
+                isVideo = entry.isVideo,
+                size = entry.uncompressedSize,
+                overlayUri = overlay?.zipUri,
+                matchedMemory = matched,
+                mp4Meta = if (entry.isVideo && entry.epochMillis > 0) ExifManager.Mp4Meta(entry.epochMillis, 10f) else null
+            )
+            media.zipEntryPath = entry.entryPath
+            media.zipUri = entry.zipUri
+            mediaList.add(media)
+
+            if (onProgress != null && (index % 10 == 0 || index == sortedEntries.size - 1)) {
+                onProgress.invoke(
+                    ScanProgress(
+                        totalFound = totalMedia,
+                        photosFound = photoCount,
+                        videosFound = videoCount,
+                        overlaysFound = maxOf(overlayCount, photoOverlayMatchedCount + videoOverlayMatchedCount),
+                        duplicatesFound = duplicateCount,
+                        matchedCount = matchedCount,
+                        currentFileName = entry.baseName,
+                        isMatchingPhase = true
+                    )
+                )
+            }
+        }
+
+        val chunkGroups = detectVideoChunks(mediaList)
+        val estimatedSec = (totalMedia * 0.02).toInt().coerceAtLeast(1)
+
+        val stats = ScanStats(
+            totalMediaFiles = totalMedia,
+            photoCount = photoCount,
+            videoCount = videoCount,
+            matchedCount = matchedCount,
+            overlayCount = maxOf(overlayCount, photoOverlayMatchedCount + videoOverlayMatchedCount),
+            photoOverlayCount = photoOverlayMatchedCount,
+            videoOverlayCount = videoOverlayMatchedCount,
+            videoChunkGroupsCount = chunkGroups.size,
+            videoChunkFilesCount = chunkGroups.sumOf { it.size },
+            duplicateCount = duplicateCount,
+            missingMetadataCount = (totalMedia - matchedCount).coerceAtLeast(0),
+            detectedTimezone = targetTimeZone,
+            estimatedTimeSeconds = estimatedSec,
+            totalMetadataEntries = distinctHistory.size,
+            hasMetadataFile = historyItems.isNotEmpty()
+        )
+
+        val result = FullScanResult(
+            stats = stats,
+            mediaList = mediaList,
+            jsonUri = null,
+            rootFolderUri = zipUris.firstOrNull() ?: Uri.EMPTY,
+            zipUris = zipUris,
+            isZipSource = true
+        )
+        lastScanResult = result
+        return result
+    }
+
     @Volatile
     var lastScanResult: FullScanResult? = null
+
 
     /**
      * Detects consecutive video segments (10-second snap chunks recorded back-to-back within <=18s).

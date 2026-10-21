@@ -176,7 +176,7 @@ object VideoChunkMerger {
      * Fast remuxing using MediaExtractor and MediaMuxer without re-encoding frames.
      * Takes ~30ms to merge 1080p chunks with 100% original quality.
      */
-    private fun fastRemuxChunks(inputFiles: List<File>, outputFile: File): Boolean {
+    fun fastRemuxChunks(inputFiles: List<File>, outputFile: File): Boolean {
         if (inputFiles.size < 2) return false
         var muxer: MediaMuxer? = null
         val extractors = mutableListOf<MediaExtractor>()
