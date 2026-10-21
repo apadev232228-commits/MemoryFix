@@ -89,11 +89,9 @@ object MediaScanner {
             val lower = name.lowercase()
             return lower == "memories_history.json" ||
                    lower == "memories_history.html" ||
-                   lower == "memories.html" ||
                    lower == "memories.json" ||
                    lower == "saved_media.json" ||
-                   lower == "saved_media.html" ||
-                   (lower.startsWith("memories") && (lower.endsWith(".json") || lower.endsWith(".html")))
+                   lower == "saved_media.html"
         }
 
         fun walk(dir: DocumentFile) {
@@ -159,13 +157,17 @@ object MediaScanner {
             )
         )
 
+        // Prioritize structured JSON files over HTML files if available
+        val jsonDocs = metadataDocs.filter { it.name?.lowercase()?.endsWith(".json") == true }
+        val targetDocs = if (jsonDocs.isNotEmpty()) jsonDocs else metadataDocs
+
         val memoryItems = mutableListOf<MemoryItem>()
-        for (doc in metadataDocs) {
+        for (doc in targetDocs) {
             val parsed = SnapchatHistoryParser.parseFromUri(context, doc.uri)
             memoryItems.addAll(parsed)
         }
-        val distinctMemoryItems = if (metadataDocs.size > 1) {
-            memoryItems.distinctBy { it.dateString }
+        val distinctMemoryItems = if (targetDocs.size > 1) {
+            memoryItems.distinctBy { "${it.dateString}_${it.mediaType}_${it.locationString}" }
         } else {
             memoryItems
         }
@@ -393,7 +395,8 @@ object MediaScanner {
                 }
             }
 
-            val hasFullTime = DateExtractor.hasTimeInFileName(fileName) || fileName.contains(Regex("""\d{10,13}"""))
+            val hasFullTime = DateExtractor.hasTimeInFileName(fileName) ||
+                Regex("""(?:snapchat|media|item)[-_]\d{10,13}""", RegexOption.IGNORE_CASE).containsMatchIn(fileName)
 
             // 2. Priority 2: Full timestamp in filename (e.g. 2023-08-14_19-42-10 or epoch)
             if (hasFullTime) {
@@ -416,23 +419,23 @@ object MediaScanner {
                     val match = findClosestWithinTolerance(fileEpoch, isVideo, toleranceMs = 60_000L)
                     if (match != null) return match
                 }
-            } else {
-                // 3. Priority 3: Fallback when filename only contains date (e.g. 2023-08-14.jpg, 2023-08-14-1.jpg)
-                val dateKey = DateExtractor.extractDateKey(fileName)
-                if (dateKey != null) {
-                    val seqIndex = DateExtractor.extractSequenceIndex(fileName)
+            }
 
-                    val candidateList = (if (isVideo) videosByUtcDate[dateKey] else photosByUtcDate[dateKey])
-                        ?: (if (isVideo) videosByLocalDate[dateKey] else photosByLocalDate[dateKey])
-                        ?: allByUtcDate[dateKey]
-                        ?: allByLocalDate[dateKey]
+            // 3. Priority 3: Fallback when filename only contains date (e.g. 2023-08-14.jpg, 2023-08-14_<uuid>-main.jpg)
+            val dateKey = DateExtractor.extractDateKey(fileName)
+            if (dateKey != null) {
+                val seqIndex = DateExtractor.extractSequenceIndex(fileName)
 
-                    if (!candidateList.isNullOrEmpty()) {
-                        return if (seqIndex < candidateList.size) {
-                            candidateList[seqIndex]
-                        } else {
-                            candidateList.last()
-                        }
+                val candidateList = (if (isVideo) videosByUtcDate[dateKey] else photosByUtcDate[dateKey])
+                    ?: (if (isVideo) videosByLocalDate[dateKey] else photosByLocalDate[dateKey])
+                    ?: allByUtcDate[dateKey]
+                    ?: allByLocalDate[dateKey]
+
+                if (!candidateList.isNullOrEmpty()) {
+                    return if (seqIndex < candidateList.size) {
+                        candidateList[seqIndex]
+                    } else {
+                        candidateList.last()
                     }
                 }
             }

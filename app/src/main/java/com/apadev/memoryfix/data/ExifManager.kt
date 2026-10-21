@@ -67,45 +67,70 @@ object ExifManager {
             val inChannel = FileInputStream(fd).channel
             val outChannel = FileOutputStream(fd).channel
 
+            val fileSize = inChannel.size()
+            if (fileSize < 16) return false
+
             // Seconds from Jan 1, 1904 to Jan 1, 1970 UTC
             val mp4EpochOffset = 2082844800L
             val mp4Seconds = (epochMillis / 1000) + mp4EpochOffset
 
-            // Search for "mvhd" atom in the first 2MB
-            val searchLimit = Math.min(inChannel.size(), 2 * 1024 * 1024L)
-            if (searchLimit < 16) return false
+            var mvhdAbsolutePos = -1L
+            var mvhdVersion = 0
 
-            val buffer = ByteBuffer.allocate(searchLimit.toInt())
+            // 1. Search head (first 2MB)
+            val headLimit = Math.min(fileSize, 2 * 1024 * 1024L).toInt()
+            val headBuffer = ByteBuffer.allocate(headLimit)
             inChannel.position(0)
-            inChannel.read(buffer)
-            buffer.flip()
+            inChannel.read(headBuffer)
+            headBuffer.flip()
+            val headBytes = headBuffer.array()
 
-            val bytes = buffer.array()
-            var mvhdPos = -1
-            // search for 'm', 'v', 'h', 'd'
-            for (i in 0 until bytes.size - 8) {
-                if (bytes[i] == 0x6D.toByte() &&
-                    bytes[i + 1] == 0x76.toByte() &&
-                    bytes[i + 2] == 0x68.toByte() &&
-                    bytes[i + 3] == 0x64.toByte()
+            for (i in 0 until headBytes.size - 8) {
+                if (headBytes[i] == 0x6D.toByte() &&
+                    headBytes[i + 1] == 0x76.toByte() &&
+                    headBytes[i + 2] == 0x68.toByte() &&
+                    headBytes[i + 3] == 0x64.toByte()
                 ) {
-                    mvhdPos = i
+                    mvhdAbsolutePos = i.toLong()
+                    mvhdVersion = headBytes[i + 4].toInt()
                     break
                 }
             }
 
-            if (mvhdPos != -1) {
-                val version = bytes[mvhdPos + 4].toInt()
-                val writePos = (mvhdPos + 4 + 4).toLong() // skip 'mvhd' (4) + version(1) + flags(3) = 8 bytes
+            // 2. If not found in head, search tail (last 2MB) where moov is located in streaming MP4s
+            if (mvhdAbsolutePos == -1L && fileSize > headLimit) {
+                val tailSize = Math.min(fileSize - headLimit, 2 * 1024 * 1024L).toInt()
+                val tailStart = fileSize - tailSize
+                val tailBuffer = ByteBuffer.allocate(tailSize)
+                inChannel.position(tailStart)
+                inChannel.read(tailBuffer)
+                tailBuffer.flip()
+                val tailBytes = tailBuffer.array()
+
+                for (i in 0 until tailBytes.size - 8) {
+                    if (tailBytes[i] == 0x6D.toByte() &&
+                        tailBytes[i + 1] == 0x76.toByte() &&
+                        tailBytes[i + 2] == 0x68.toByte() &&
+                        tailBytes[i + 3] == 0x64.toByte()
+                    ) {
+                        mvhdAbsolutePos = tailStart + i
+                        mvhdVersion = tailBytes[i + 4].toInt()
+                        break
+                    }
+                }
+            }
+
+            if (mvhdAbsolutePos != -1L) {
+                val writePos = mvhdAbsolutePos + 8 // skip 'mvhd' (4) + version(1) + flags(3) = 8 bytes
                 outChannel.position(writePos)
 
-                if (version == 0) {
+                if (mvhdVersion == 0) {
                     val timeBuf = ByteBuffer.allocate(8)
                     timeBuf.putInt(mp4Seconds.toInt())
                     timeBuf.putInt(mp4Seconds.toInt())
                     timeBuf.flip()
                     outChannel.write(timeBuf)
-                } else if (version == 1) {
+                } else if (mvhdVersion == 1) {
                     val timeBuf = ByteBuffer.allocate(16)
                     timeBuf.putLong(mp4Seconds)
                     timeBuf.putLong(mp4Seconds)
