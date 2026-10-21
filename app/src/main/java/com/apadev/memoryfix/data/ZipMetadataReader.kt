@@ -268,4 +268,59 @@ object ZipMetadataReader {
 
         return unifiedMap
     }
+
+    /**
+     * Quickly validates whether a ZIP contains Snapchat export indicators:
+     * - memories_history.json / memories_history.html
+     * - media files in memories/ folder or matching Snapchat naming pattern (YYYY-MM-DD_...-main.jpg)
+     */
+    fun validateSnapchatZip(context: Context, zipUri: Uri): ZipValidationResult {
+        return try {
+            val entries = context.contentResolver.openFileDescriptor(zipUri, "r")?.use { pfd ->
+                readAllZipEntriesFromFd(pfd.fileDescriptor, zipUri)
+            } ?: emptyList()
+
+            var mediaCount = 0
+            var hasHistory = false
+            var sampleMedia: String? = null
+            var hasMemoriesFolder = false
+
+            for (entry in entries) {
+                if (entry.isHistory) {
+                    hasHistory = true
+                }
+                if (entry.entryPath.contains("memories", ignoreCase = true)) {
+                    hasMemoriesFolder = true
+                }
+                val nameLower = entry.baseName.lowercase()
+                val ext = nameLower.substringAfterLast('.', "")
+                val isMedia = VIDEO_EXTENSIONS.contains(ext) || IMAGE_EXTENSIONS.contains(ext)
+                if (isMedia && !entry.isOverlay) {
+                    mediaCount++
+                    if (sampleMedia == null && (nameLower.contains("-main") || nameLower.contains("memory") || nameLower.matches(Regex(".*\\d{4}-\\d{2}-\\d{2}.*")))) {
+                        sampleMedia = entry.baseName
+                    }
+                }
+            }
+
+            val isValid = hasHistory || sampleMedia != null || (mediaCount > 0 && hasMemoriesFolder)
+            ZipValidationResult(
+                isValid = isValid,
+                mediaCount = mediaCount,
+                hasHistory = hasHistory,
+                sampleMediaName = sampleMedia
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ZipValidationResult(isValid = false, mediaCount = 0, hasHistory = false)
+        }
+    }
 }
+
+data class ZipValidationResult(
+    val isValid: Boolean,
+    val mediaCount: Int,
+    val hasHistory: Boolean,
+    val sampleMediaName: String? = null
+)
+

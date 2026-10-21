@@ -5,201 +5,196 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="28dp">
+    android:padding="24dp">
 
-    <!-- Processing Graphic -->
-    <ProgressBar
-        android:id="@+id/progressCircular"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="88dp"
-        android:layout_height="88dp"
-        android:indeterminateTint="@color/primary" />
+    <!-- Photo Restoration Animated Card -->
+    <FrameLayout
+        android:id="@+id/layoutPhotoFrame"
+        android:layout_width="140dp"
+        android:layout_height="160dp"
+        android:background="@drawable/bg_card_elevated"
+        android:padding="12dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <!-- Photo Icon with Glow -->
+            <FrameLayout
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/bg_card"
+                android:padding="14dp">
+
+                <ImageView
+                    android:id="@+id/ivAnimatedPhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_photo"
+                    app:tint="@color/primary" />
+
+                <ImageView
+                    android:id="@+id/ivSparkleBadge"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="top|end"
+                    android:src="@drawable/ic_auto_fix"
+                    app:tint="@color/accent" />
+            </FrameLayout>
+
+            <!-- Restored Date Badge inside Photo Frame -->
+            <TextView
+                android:id="@+id/tvFrameDateBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_badge_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:text="Restoring Dates..."
+                android:textColor="@color/accent"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Large Progress Percentage -->
     <TextView
         android:id="@+id/tvProgressPercentage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="24dp"
         android:text="0%"
         android:textColor="@color/text_primary"
-        android:textSize="38sp"
+        android:textSize="44sp"
         android:textStyle="bold" />
 
+    <!-- EXACTLY ONE SINGLE DYNAMIC STATUS TEXT -->
     <TextView
-        android:id="@+id/tvProcessingTitle"
+        android:id="@+id/tvSingleStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="@string/processing_title"
-        android:textColor="@color/text_primary"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvProgressCount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="Processing memories..."
-        android:textColor="@color/accent"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvFriendlyStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:gravity="center"
-        android:text="Restoring your favorite selfies..."
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+        android:text="Preparing your memories..."
+        android:textColor="@color/primary"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
-    <!-- Current File Card -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="Restoring original capture dates, times &amp; GPS locations"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
+
+    <!-- Sleek Linear Progress Bar -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressLinear"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="22dp"
+        app:indicatorColor="@color/primary"
+        app:trackColor="@color/surface_border"
+        app:trackCornerRadius="4dp" />
+
+    <!-- Live Fixing Summary Chips -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="20dp"
         android:background="@drawable/bg_card"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingVertical="14dp">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:src="@drawable/ic_photo"
-                app:tint="@color/text_tertiary" />
+            <TextView
+                android:id="@+id/tvLivePhotosFixed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@color/primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="CURRENT ITEM"
-                android:textColor="@color/text_tertiary"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="2dp"
+                android:text="Photos Fixed"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvCurrentFileName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:ellipsize="middle"
-            android:singleLine="true"
-            android:text="Preparing files..."
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <!-- Linear Progress Bar -->
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/progressLinear"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginTop="16dp"
-            app:indicatorColor="@color/primary"
-            app:trackColor="@color/surface_border"
-            app:trackCornerRadius="4dp" />
-
         <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="14dp"
+            android:layout_width="1dp"
+            android:layout_height="26dp"
             android:background="@color/surface_border" />
 
-        <!-- Live Fixing Summary Metrics -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/tvLiveVideosFixed"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:text="0"
+                android:textColor="@color/amber"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvLivePhotosFixed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="@color/primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Photos Fixed"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/surface_border" />
-
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:layout_marginTop="2dp"
+                android:text="Videos Fixed"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvLiveVideosFixed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="@color/amber"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+        <View
+            android:layout_width="1dp"
+            android:layout_height="26dp"
+            android:background="@color/surface_border" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Videos Fixed"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/surface_border" />
-
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/tvLiveOverlaysMerged"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:text="0"
+                android:textColor="@color/accent"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvLiveOverlaysMerged"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="@color/accent"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Overlays"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Overlays"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -216,7 +211,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_info"
+            android:src="@drawable/ic_shield_check"
             app:tint="@color/accent" />
 
         <TextView
@@ -224,17 +219,18 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:text="Safe in background. You will receive a notification as soon as processing completes."
+            android:text="Safe to leave the app. You'll receive a notification when restoration is finished."
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
     </LinearLayout>
 
+    <!-- Cancel Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCancelProcessing"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="16dp"
         android:text="@string/btn_cancel"
         android:textColor="@color/error" />
 

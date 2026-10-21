@@ -13,27 +13,73 @@ import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.MemoryFixApp
 import com.apadev.memoryfix.databinding.FragmentHomeBinding
 
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
+import com.apadev.memoryfix.data.ZipMetadataReader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val selectZipLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenMultipleDocuments()
-    ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            for (uri in uris) {
-                try {
-                    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    requireContext().contentResolver.takePersistableUriPermission(uri, flags)
-                } catch (e: Exception) {
-                    // Ignore permission error if already granted or restricted
+    private val zipMimeTypes = arrayOf(
+        "application/zip",
+        "application/x-zip-compressed",
+        "application/octet-stream",
+        "*/*"
+    )
+
+    private lateinit var selectZipLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        selectZipLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenMultipleDocuments()
+        ) { uris: List<Uri> ->
+            if (uris.isNotEmpty()) {
+                for (uri in uris) {
+                    try {
+                        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        requireContext().contentResolver.takePersistableUriPermission(uri, flags)
+                    } catch (e: Exception) {
+                        // Ignore permission error if already granted or restricted
+                    }
                 }
+
+                // Perform fast background validation
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val validationResults = withContext(Dispatchers.IO) {
+                        uris.map { ZipMetadataReader.validateSnapchatZip(requireContext(), it) }
+                    }
+
+                    val anyValid = validationResults.any { it.isValid }
+                    if (!anyValid) {
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Not a Snapchat Export?")
+                            .setMessage("The selected file doesn't seem to contain Snapchat memories (we couldn't find memories_history.json or Snapchat photos/videos).\n\nPlease verify you selected the official ZIP downloaded from Snapchat (typically named 'mydata~...zip').\n\nWould you like to try again, or proceed anyway?")
+                            .setPositiveButton("Proceed Anyway") { _, _ ->
+                                (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
+                            }
+                            .setNegativeButton("Select Again") { _, _ ->
+                                openZipPicker()
+                            }
+                            .setNeutralButton("Cancel", null)
+                            .show()
+                    } else {
+                        (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
+                    }
+                }
+            } else {
+                Toast.makeText(requireContext(), "No ZIP file selected", Toast.LENGTH_SHORT).show()
             }
-            (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
-        } else {
-            Toast.makeText(requireContext(), "No ZIP file selected", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun openZipPicker() {
+        selectZipLauncher.launch(zipMimeTypes)
     }
 
     private val selectFolderLauncher = registerForActivityResult(
@@ -64,19 +110,12 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val zipMimeTypes = arrayOf(
-            "application/zip",
-            "application/x-zip-compressed",
-            "application/octet-stream",
-            "*/*"
-        )
-
         binding.btnChooseZip.setOnClickListener {
-            selectZipLauncher.launch(zipMimeTypes)
+            openZipPicker()
         }
 
         binding.cardSelectZip.setOnClickListener {
-            selectZipLauncher.launch(zipMimeTypes)
+            openZipPicker()
         }
 
         binding.btnChooseFolder.setOnClickListener {

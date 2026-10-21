@@ -14,10 +14,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.apadev.memoryfix.MainActivity
-import com.apadev.memoryfix.MemoryFixApp
-import com.apadev.memoryfix.ads.AdManager
 import com.apadev.memoryfix.data.FullScanResult
 import com.apadev.memoryfix.data.MediaScanner
+import com.apadev.memoryfix.data.ScanProgress
 import com.apadev.memoryfix.databinding.FragmentAnalysisBinding
 import com.apadev.memoryfix.model.ScanStats
 import com.apadev.memoryfix.worker.ExportProcessWorker
@@ -36,6 +35,7 @@ class AnalysisFragment : Fragment() {
     private var zipUris: List<Uri>? = null
     private var scanResult: FullScanResult? = null
     private var selectedTimezone: String = TimeZone.getDefault().id
+    private var isSettingsExpanded: Boolean = false
 
     companion object {
         private const val ARG_FOLDER_URI = "ARG_FOLDER_URI"
@@ -85,30 +85,24 @@ class AnalysisFragment : Fragment() {
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
 
+        binding.layoutScanningPhase.visibility = View.VISIBLE
+        binding.layoutReadyPhase.visibility = View.GONE
         binding.tvCurrentTimezone.text = selectedTimezone
-        binding.tvFolderScanStatus.text = if (isZipSource) "Scanning Snapchat ZIP archives..." else "Scanning export folder..."
-        binding.progressScan.visibility = View.VISIBLE
-        binding.ivScanComplete.visibility = View.GONE
+        binding.tvScanningTitle.text = if (isZipSource) "Scanning Snapchat Archive" else "Scanning Export Folder"
+        binding.tvFolderScanStatus.text = "Reading timestamps & matching timeline..."
+        binding.tvLiveScanCounter.text = "Initializing scan..."
         binding.btnStartProcessing.isEnabled = false
         binding.btnStartProcessing.alpha = 0.5f
 
-        // Start scanning with real-time live progress updates
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                if (isZipSource) {
-                    MediaScanner.scanZipUris(requireContext(), zipUris!!, selectedTimezone) { progress ->
-                        updateProgressUI(progress)
-                    }
-                } else {
-                    MediaScanner.scanTree(requireContext(), folderUri!!, selectedTimezone) { progress ->
-                        updateProgressUI(progress)
-                    }
-                }
-            }
-            scanResult = result
-            populateStats(result)
+        // Advanced Options Accordion Header
+        binding.layoutSettingsHeader.setOnClickListener {
+            isSettingsExpanded = !isSettingsExpanded
+            binding.layoutSettingsContent.visibility = if (isSettingsExpanded) View.VISIBLE else View.GONE
+            binding.ivSettingsChevron.animate()
+                .rotation(if (isSettingsExpanded) 180f else 0f)
+                .setDuration(200)
+                .start()
         }
-
 
         binding.btnChangeTimezone.setOnClickListener {
             showTimezoneDialog()
@@ -118,10 +112,8 @@ class AnalysisFragment : Fragment() {
             if (binding.switchVideoOverlay.isChecked) {
                 AlertDialog.Builder(requireContext())
                     .setTitle("Burn Stickers into Videos?")
-                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to the original untouched videos.\n\nIf turned off, video stickers are still saved with matching capture dates alongside your videos.")
-                    .setPositiveButton("Enable (Slower)") { _, _ ->
-                        // Keep enabled
-                    }
+                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to original untouched videos.\n\nIf turned off, video stickers are still preserved alongside your videos.")
+                    .setPositiveButton("Enable (Slower)") { _, _ -> }
                     .setNegativeButton("Keep Off (Recommended)") { _, _ ->
                         binding.switchVideoOverlay.isChecked = false
                     }
@@ -140,6 +132,23 @@ class AnalysisFragment : Fragment() {
                 startProcessing()
             }
         }
+
+        // Start scanning with real-time live progress updates
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                if (isZipSource) {
+                    MediaScanner.scanZipUris(requireContext(), zipUris!!, selectedTimezone) { progress ->
+                        updateProgressUI(progress)
+                    }
+                } else {
+                    MediaScanner.scanTree(requireContext(), folderUri!!, selectedTimezone) { progress ->
+                        updateProgressUI(progress)
+                    }
+                }
+            }
+            scanResult = result
+            populateStats(result)
+        }
     }
 
     private fun hasMismatch(s: ScanStats): Boolean {
@@ -148,13 +157,46 @@ class AnalysisFragment : Fragment() {
                 s.totalMetadataEntries > s.totalMediaFiles
     }
 
+    private fun updateProgressUI(progress: ScanProgress) {
+        if (!progress.isComplete && scanResult == null) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                if (_binding != null && scanResult == null) {
+                    val numberFormat = NumberFormat.getIntegerInstance()
+                    binding.tvLiveScanCounter.text = "${numberFormat.format(progress.totalFound)} memories discovered"
+                    if (progress.isMatchingPhase) {
+                        binding.tvFolderScanStatus.text = "Matching timeline history..."
+                    } else {
+                        binding.tvFolderScanStatus.text = "Reading original timestamps from archive..."
+                    }
+                }
+            }
+        }
+    }
+
     private fun populateStats(result: FullScanResult) {
         val s = result.stats
         val numberFormat = NumberFormat.getIntegerInstance()
 
-        binding.progressScan.visibility = View.GONE
-        binding.ivScanComplete.visibility = View.VISIBLE
-        binding.tvFolderScanStatus.text = "Scan complete • ${numberFormat.format(s.totalMediaFiles)} memories ready"
+        // Phase Transition: Smooth crossfade from Scanning Phase to Ready Phase
+        binding.layoutScanningPhase.animate()
+            .alpha(0f)
+            .setDuration(220)
+            .withEndAction {
+                if (_binding != null) {
+                    binding.layoutScanningPhase.visibility = View.GONE
+                    binding.layoutReadyPhase.apply {
+                        alpha = 0f
+                        translationY = 30f
+                        visibility = View.VISIBLE
+                        animate()
+                            .alpha(1f)
+                            .translationY(0f)
+                            .setDuration(300)
+                            .start()
+                    }
+                }
+            }.start()
+
         binding.tvTotalFiles.text = numberFormat.format(s.totalMediaFiles)
         binding.tvPhotoCount.text = "${numberFormat.format(s.photoCount)} Photos"
         binding.tvVideoCount.text = "${numberFormat.format(s.videoCount)} Videos"
@@ -162,8 +204,8 @@ class AnalysisFragment : Fragment() {
         if (s.totalMediaFiles > 0) {
             val photoPct = (s.photoCount * 100) / s.totalMediaFiles
             val videoPct = 100 - photoPct
-            binding.tvPhotoPercentage.text = "$photoPct%"
-            binding.tvVideoPercentage.text = "$videoPct%"
+            binding.tvPhotoPercentage.text = "($photoPct%)"
+            binding.tvVideoPercentage.text = "($videoPct%)"
 
             binding.layoutDistributionBar.visibility = View.VISIBLE
             val photoWeight = maxOf(s.photoCount.toFloat(), 0.01f)
@@ -180,56 +222,51 @@ class AnalysisFragment : Fragment() {
             binding.layoutDistributionBar.visibility = View.GONE
         }
 
-        // Overlays / Stickers Card
+        // Automatic Highlights
         if (s.overlayCount > 0) {
+            binding.layoutHighlightOverlays.visibility = View.VISIBLE
+            binding.tvHighlightOverlays.text = "${numberFormat.format(s.overlayCount)} stickers & captions will be combined onto photos"
             binding.cardOverlays.visibility = View.VISIBLE
-            binding.tvOverlayTitle.text = "${numberFormat.format(s.overlayCount)} Stickers & Captions"
+            binding.tvOverlayTitle.text = "Merge Photo Overlays (${numberFormat.format(s.photoOverlayCount)})"
             if (s.videoOverlayCount > 0) {
-                binding.tvOverlaySubtitle.text = "${numberFormat.format(s.photoOverlayCount)} on photos (will be combined) • ${numberFormat.format(s.videoOverlayCount)} on videos"
                 binding.layoutVideoOverlayOption.visibility = View.VISIBLE
-                binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s per video)."
+                binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s/video)"
             } else {
-                binding.tvOverlaySubtitle.text = "Will be combined onto matching photos"
                 binding.layoutVideoOverlayOption.visibility = View.GONE
             }
-            binding.switchOverlay.isEnabled = true
-            binding.switchOverlay.isChecked = true
         } else {
+            binding.layoutHighlightOverlays.visibility = View.GONE
             binding.cardOverlays.visibility = View.GONE
             binding.layoutVideoOverlayOption.visibility = View.GONE
-            binding.switchOverlay.isEnabled = false
-            binding.switchOverlay.isChecked = false
         }
 
-        // Duplicates Card
+        if (s.videoChunkGroupsCount > 0) {
+            binding.layoutHighlightVideoChunks.visibility = View.VISIBLE
+            binding.tvHighlightVideoChunks.text = "${s.videoChunkGroupsCount} multi-part recordings will be stitched in order"
+            binding.layoutMergeVideoChunksOption.visibility = View.VISIBLE
+            binding.tvMergeVideoChunksTitle.text = "Stitch ${s.videoChunkGroupsCount} Multi-Part Videos"
+        } else {
+            binding.layoutHighlightVideoChunks.visibility = View.GONE
+            binding.layoutMergeVideoChunksOption.visibility = View.GONE
+        }
+
         if (s.duplicateCount > 0) {
             binding.cardDuplicates.visibility = View.VISIBLE
-            binding.tvDuplicateTitle.text = "${numberFormat.format(s.duplicateCount)} Duplicate Files Found"
+            binding.tvDuplicateTitle.text = "${numberFormat.format(s.duplicateCount)} duplicate files handled automatically"
         } else {
             binding.cardDuplicates.visibility = View.GONE
         }
 
-        // Multi-Part Video Chunks Toggle: Shown ONLY if consecutive video chunks were detected
-        if (s.videoChunkGroupsCount > 0) {
-            binding.layoutMergeVideoChunksOption.visibility = View.VISIBLE
-            binding.tvMergeVideoChunksTitle.text = "Merge ${s.videoChunkGroupsCount} Multi-Part Videos"
-            binding.tvMergeVideoChunksDesc.text = "Stitches ${s.videoChunkFilesCount} consecutive 10s recording clips into full continuous videos."
-            binding.switchMergeVideoChunks.isChecked = true
-        } else {
-            binding.layoutMergeVideoChunksOption.visibility = View.GONE
-            binding.switchMergeVideoChunks.isChecked = false
-        }
-
-        // Mismatch Card: only visible if there is an actual count mismatch or missing metadata file
+        // Mismatch Alert (Visible only when needed)
         if (hasMismatch(s)) {
             binding.cardMismatch.visibility = View.VISIBLE
             if (!s.hasMetadataFile) {
                 binding.tvMismatchTitle.text = "Export History Not Found"
-                binding.tvMismatchDesc.text = "Could not find a Snapchat history file in this folder. We will restore dates using original file creation timestamps."
+                binding.tvMismatchDesc.text = "Could not find a Snapchat history file in this archive. We will restore dates using original file creation timestamps."
             } else if (s.totalMetadataEntries > s.totalMediaFiles) {
                 val missingCount = s.totalMetadataEntries - s.totalMediaFiles
                 binding.tvMismatchTitle.text = "Missing Memories ($missingCount files)"
-                binding.tvMismatchDesc.text = "Your export history lists ${numberFormat.format(s.totalMetadataEntries)} memories, but only ${numberFormat.format(s.totalMediaFiles)} files were found in this folder (${numberFormat.format(missingCount)} missing). If your export had multiple ZIP parts, make sure all parts are extracted into this folder."
+                binding.tvMismatchDesc.text = "Your export history lists ${numberFormat.format(s.totalMetadataEntries)} memories, but only ${numberFormat.format(s.totalMediaFiles)} files were found (${numberFormat.format(missingCount)} missing). If your export had multiple ZIP parts (e.g. zip-1 and zip-2), select all ZIP files together."
             } else if (s.matchedCount < s.totalMediaFiles) {
                 val unmatched = s.totalMediaFiles - s.matchedCount
                 binding.tvMismatchTitle.text = "Unmatched Media ($unmatched files)"
@@ -249,11 +286,11 @@ class AnalysisFragment : Fragment() {
             }
             binding.btnStartProcessing.isEnabled = true
             binding.btnStartProcessing.alpha = 1.0f
-            binding.btnStartProcessing.text = "Start Fixing Memories (~$timeEst)"
+            binding.btnStartProcessing.text = "Start Restoring Memories (~$timeEst)"
         } else {
             binding.btnStartProcessing.isEnabled = false
             binding.btnStartProcessing.alpha = 0.5f
-            binding.tvFolderScanStatus.text = "No media files found in this folder"
+            binding.btnStartProcessing.text = "No Memories Found"
         }
     }
 
@@ -265,12 +302,12 @@ class AnalysisFragment : Fragment() {
 
         if (!stats.hasMetadataFile) {
             title = "Export History Not Found"
-            message = "We couldn't find your Snapchat history metadata file in this folder.\n\nCapture dates will be restored using each file's original creation timestamp instead.\n\nWould you like to proceed?"
+            message = "We couldn't find your Snapchat history metadata file.\n\nCapture dates will be restored using each file's original creation timestamp instead.\n\nWould you like to proceed?"
             positiveButtonText = "Fix Using Timestamps"
         } else if (stats.totalMetadataEntries > stats.totalMediaFiles) {
             val missingCount = stats.totalMetadataEntries - stats.totalMediaFiles
             title = "Missing Memories Detected"
-            message = "Your Snapchat history lists ${numberFormat.format(stats.totalMetadataEntries)} memories, but only ${numberFormat.format(stats.totalMediaFiles)} files were found in this folder (${numberFormat.format(missingCount)} missing).\n\nIf your export came in multiple ZIP files (e.g. part 1 and part 2), make sure all parts are extracted into this folder.\n\nWould you like to fix the ${numberFormat.format(stats.totalMediaFiles)} available files now, or choose another folder?"
+            message = "Your Snapchat history lists ${numberFormat.format(stats.totalMetadataEntries)} memories, but only ${numberFormat.format(stats.totalMediaFiles)} files were found (${numberFormat.format(missingCount)} missing).\n\nIf your export came in multiple ZIP files (e.g. zip-1 and zip-2), select all ZIP parts together.\n\nWould you like to fix the ${numberFormat.format(stats.totalMediaFiles)} available files now, or select other files?"
             positiveButtonText = "Fix Available (${numberFormat.format(stats.totalMediaFiles)})"
         } else if (stats.matchedCount < stats.totalMediaFiles) {
             val unmatched = stats.totalMediaFiles - stats.matchedCount
@@ -288,7 +325,7 @@ class AnalysisFragment : Fragment() {
             .setPositiveButton(positiveButtonText) { _, _ ->
                 startProcessing()
             }
-            .setNegativeButton("Choose Another Folder") { _, _ ->
+            .setNegativeButton("Select Another Archive") { _, _ ->
                 (activity as? MainActivity)?.navigateToHome()
             }
             .setNeutralButton("Cancel", null)
@@ -299,23 +336,19 @@ class AnalysisFragment : Fragment() {
         val defaultId = TimeZone.getDefault().id
         val popularZones = listOf(
             defaultId,
-            "Asia/Calcutta",
-            "Asia/Kolkata",
             "UTC",
+            "Asia/Kolkata",
             "America/New_York",
-            "America/Chicago",
-            "America/Denver",
             "America/Los_Angeles",
+            "America/Chicago",
             "Europe/London",
             "Europe/Paris",
-            "Europe/Berlin",
             "Asia/Dubai",
-            "Asia/Singapore",
             "Asia/Tokyo",
             "Australia/Sydney"
         ).distinct()
-        val allZones = (popularZones + TimeZone.getAvailableIDs().sorted()).distinct().toTypedArray()
 
+        val allZones = popularZones.toTypedArray()
         AlertDialog.Builder(requireContext())
             .setTitle("Select Timezone")
             .setItems(allZones) { _, which ->
@@ -326,92 +359,43 @@ class AnalysisFragment : Fragment() {
             .show()
     }
 
-    private fun updateProgressUI(progress: com.apadev.memoryfix.data.ScanProgress) {
-        if (!progress.isComplete && scanResult == null) {
-            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                if (_binding != null && scanResult == null) {
-                    val numberFormat = NumberFormat.getIntegerInstance()
-                    binding.tvTotalFiles.text = numberFormat.format(progress.totalFound)
-                    binding.tvPhotoCount.text = "${numberFormat.format(progress.photosFound)} Photos"
-                    binding.tvVideoCount.text = "${numberFormat.format(progress.videosFound)} Videos"
-
-                    if (progress.totalFound > 0) {
-                        val photoPct = (progress.photosFound * 100) / progress.totalFound
-                        val videoPct = 100 - photoPct
-                        binding.tvPhotoPercentage.text = "$photoPct%"
-                        binding.tvVideoPercentage.text = "$videoPct%"
-
-                        binding.layoutDistributionBar.visibility = View.VISIBLE
-                        val photoWeight = maxOf(progress.photosFound.toFloat(), 0.01f)
-                        val videoWeight = maxOf(progress.videosFound.toFloat(), 0.01f)
-                        binding.viewPhotoRatio.layoutParams =
-                            (binding.viewPhotoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                                weight = photoWeight
-                            }
-                        binding.viewVideoRatio.layoutParams =
-                            (binding.viewVideoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                                weight = videoWeight
-                            }
-                    }
-
-                    if (progress.overlaysFound > 0) {
-                        binding.cardOverlays.visibility = View.VISIBLE
-                        binding.tvOverlayTitle.text = "${numberFormat.format(progress.overlaysFound)} Stickers & Captions"
-                    }
-
-                    if (progress.duplicatesFound > 0) {
-                        binding.cardDuplicates.visibility = View.VISIBLE
-                        binding.tvDuplicateTitle.text = "${numberFormat.format(progress.duplicatesFound)} Duplicate Files Found"
-                    }
-
-                    if (progress.isMatchingPhase) {
-                        binding.tvFolderScanStatus.text = "Preparing memories: ${progress.matchedCount} of ${progress.totalFound}..."
-                    } else {
-                        binding.tvFolderScanStatus.text = "Scanning: ${numberFormat.format(progress.totalFound)} items found..."
-                    }
-                }
-            }
-        }
-    }
-
     private fun startProcessing() {
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
 
-        val app = requireActivity().application as? MemoryFixApp
-        val isPro = app?.billingManager?.isPro?.value ?: false
+        val embedLocation = true
+        val mergeOverlays = binding.switchOverlay.isChecked
+        val burnVideoOverlays = binding.switchVideoOverlay.isChecked
+        val mergeVideoChunks = binding.switchMergeVideoChunks.isChecked
 
-        AdManager.showInterstitial(requireActivity(), isPro) {
-            val workDataBuilder = Data.Builder()
-                .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, binding.switchLocation.isChecked)
-                .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, binding.switchOverlay.isChecked)
-                .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, binding.switchVideoOverlay.isChecked)
-                .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, binding.switchMergeVideoChunks.isChecked)
-                .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
+        val inputDataBuilder = Data.Builder()
+            .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, embedLocation)
+            .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, mergeOverlays)
+            .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, burnVideoOverlays)
+            .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, mergeVideoChunks)
+            .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
 
-            if (isZipSource) {
-                workDataBuilder.putStringArray(
-                    ExportProcessWorker.KEY_ZIP_URIS,
-                    zipUris!!.map { it.toString() }.toTypedArray()
-                )
-            } else if (folderUri != null) {
-                workDataBuilder.putString(ExportProcessWorker.KEY_TREE_URI, folderUri.toString())
-            }
-
-            val workRequest = OneTimeWorkRequestBuilder<ExportProcessWorker>()
-                .setInputData(workDataBuilder.build())
-                .build()
-
-            WorkManager.getInstance(requireContext()).enqueueUniqueWork(
-                "MemoryFixExport",
-                ExistingWorkPolicy.REPLACE,
-                workRequest
+        if (isZipSource) {
+            inputDataBuilder.putStringArray(
+                ExportProcessWorker.KEY_ZIP_URIS,
+                zipUris!!.map { it.toString() }.toTypedArray()
             )
-
-            (activity as? MainActivity)?.navigateToProcessing()
+        } else {
+            inputDataBuilder.putString(ExportProcessWorker.KEY_TREE_URI, folderUri.toString())
         }
-    }
 
+        val workRequest = OneTimeWorkRequestBuilder<ExportProcessWorker>()
+            .setInputData(inputDataBuilder.build())
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniqueWork(
+            "MemoryFixExport",
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+
+        (activity as? MainActivity)?.navigateToProcessing()
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

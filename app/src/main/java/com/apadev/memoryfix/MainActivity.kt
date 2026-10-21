@@ -63,12 +63,19 @@ class MainActivity : AppCompatActivity() {
         // Clear entire back stack first
         supportFragmentManager.popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.fade_scale_in, R.anim.fade_scale_out)
             .replace(R.id.fragmentContainer, HomeFragment())
             .commit()
     }
 
     fun navigateToAnalysis(folderUri: Uri) {
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
             .replace(R.id.fragmentContainer, AnalysisFragment.newInstance(folderUri))
             .addToBackStack("analysis")
             .commit()
@@ -76,6 +83,12 @@ class MainActivity : AppCompatActivity() {
 
     fun navigateToAnalysisWithZips(zipUris: List<Uri>) {
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
             .replace(R.id.fragmentContainer, AnalysisFragment.newInstanceWithZips(zipUris))
             .addToBackStack("analysis")
             .commit()
@@ -85,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         // Clear the analysis from back stack so back from processing doesn't go to analysis
         supportFragmentManager.popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.fade_scale_in, R.anim.fade_scale_out)
             .replace(R.id.fragmentContainer, ProcessingFragment())
             .commit()
     }
@@ -98,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         totalScanned: Int = 0
     ) {
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.fade_scale_in, R.anim.fade_scale_out)
             .replace(
                 R.id.fragmentContainer,
                 ResultFragment.newInstance(
