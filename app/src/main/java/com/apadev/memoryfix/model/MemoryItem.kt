@@ -64,7 +64,7 @@ data class MemoryItem(
             if (parts.size >= 2) {
                 val lat = parts[0].trim().toDouble()
                 val lng = parts[1].trim().toDouble()
-                if (lat in -90.0..90.0 && lng in -180.0..180.0) {
+                if (lat in -90.0..90.0 && lng in -180.0..180.0 && (lat != 0.0 || lng != 0.0)) {
                     lat to lng
                 } else null
             } else null

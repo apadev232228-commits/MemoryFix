@@ -376,31 +376,46 @@ object MediaScanner {
         ): MemoryItem? {
             if (sortedItems.isEmpty() && exactKeyMap.isEmpty()) return null
 
+            // 1. Priority 1: Exact timestamp match using fileLastModified (preserved by ZIP extract)
+            if (fileLastModified > 0) {
+                val match = findClosestWithinTolerance(fileLastModified, isVideo, toleranceMs = 60_000L)
+                if (match != null) {
+                    val dateKey = DateExtractor.extractDateKey(fileName)
+                    if (dateKey == null || match.dateString?.startsWith(dateKey) == true) {
+                        return match
+                    }
+                    val matchEpoch = match.parseEpochMillis() ?: 0L
+                    if (Math.abs(matchEpoch - fileLastModified) <= 60_000L) {
+                        return match
+                    }
+                }
+            }
+
             val hasFullTime = DateExtractor.hasTimeInFileName(fileName) || fileName.contains(Regex("""\d{10,13}"""))
 
+            // 2. Priority 2: Full timestamp in filename (e.g. 2023-08-14_19-42-10 or epoch)
             if (hasFullTime) {
                 val canonical = extractCanonicalBaseKey(fileName)
                     .replace(" ", "_")
                     .replace(":", "-")
 
-                // 1. Exact canonical string match (only for full timestamp keys)
+                // Exact canonical string match
                 for ((key, item) in exactKeyMap) {
                     if (canonical == key || canonical.contains(key)) {
                         return item
                     }
                 }
 
-                // 2. Tolerance-based matching from filename timestamp (UTC first, then local)
+                // Tolerance-based matching from filename timestamp (UTC first, then local)
                 val fileEpoch = DateExtractor.extractEpochMillisFromFileName(fileName, "UTC")
                     ?: DateExtractor.extractEpochMillisFromFileName(fileName, timeZoneId)
 
                 if (fileEpoch != null) {
-                    // Match within 60-second window (handles ZIP 2-second DOS rounding + snap delay)
                     val match = findClosestWithinTolerance(fileEpoch, isVideo, toleranceMs = 60_000L)
                     if (match != null) return match
                 }
             } else {
-                // Filename only contains date (e.g. 2023-08-14.jpg, 2023-08-14-1.jpg, 2023-08-14-main.jpg)
+                // 3. Priority 3: Fallback when filename only contains date (e.g. 2023-08-14.jpg, 2023-08-14-1.jpg)
                 val dateKey = DateExtractor.extractDateKey(fileName)
                 if (dateKey != null) {
                     val seqIndex = DateExtractor.extractSequenceIndex(fileName)
@@ -420,12 +435,6 @@ object MediaScanner {
                 }
             }
 
-            // 3. Fallback: match using file system lastModified (e.g. from ZIP extraction)
-            if (fileLastModified > 0) {
-                val match = findClosestWithinTolerance(fileLastModified, isVideo, toleranceMs = 60_000L)
-                if (match != null) return match
-            }
-
             return null
         }
 
@@ -440,27 +449,13 @@ object MediaScanner {
             var minDiff = Long.MAX_VALUE
 
             // Binary search to find closest timestamp index
-            var low = 0
-            var high = sortedItems.size - 1
-            var startIndex = 0
-
-            while (low <= high) {
-                val mid = (low + high).ushr(1)
-                val midVal = sortedItems[mid].epochMillis
-                if (midVal < targetEpoch) {
-                    low = mid + 1
-                    startIndex = mid
-                } else if (midVal > targetEpoch) {
-                    high = mid - 1
-                } else {
-                    startIndex = mid
-                    break
-                }
-            }
+            var idx = sortedItems.binarySearch { it.epochMillis.compareTo(targetEpoch) }
+            if (idx < 0) idx = -idx - 1
+            val startIndex = idx.coerceIn(0, sortedItems.size - 1)
 
             // Search in local neighborhood around startIndex
-            val startSearch = maxOf(0, startIndex - 20)
-            val endSearch = minOf(sortedItems.size - 1, startIndex + 20)
+            val startSearch = maxOf(0, startIndex - 50)
+            val endSearch = minOf(sortedItems.size - 1, startIndex + 50)
 
             for (i in startSearch..endSearch) {
                 val entry = sortedItems[i]
