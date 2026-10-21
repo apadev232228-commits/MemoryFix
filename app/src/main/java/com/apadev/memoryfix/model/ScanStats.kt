@@ -9,7 +9,9 @@ data class ScanStats(
     val duplicateCount: Int = 0,
     val missingMetadataCount: Int = 0,
     val detectedTimezone: String = "UTC",
-    val estimatedTimeSeconds: Int = 0
+    val estimatedTimeSeconds: Int = 0,
+    val totalMetadataEntries: Int = 0,
+    val hasMetadataFile: Boolean = false
 )
 
 data class ProcessingOptions(

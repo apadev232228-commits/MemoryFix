@@ -35,4 +35,14 @@
     <color name="chip_border">#3B445D</color>
     <color name="pro_gold">#FFD700</color>
     <color name="pro_gold_dark">#B8860B</color>
+
+    <!-- Visual Media Identifiers -->
+    <color name="photo_purple">#A78BFA</color>
+    <color name="photo_purple_container">#231A47</color>
+    <color name="video_blue">#38BDF8</color>
+    <color name="video_blue_container">#0C2B45</color>
+    <color name="overlay_pink">#F472B6</color>
+    <color name="overlay_pink_container">#3B132B</color>
+    <color name="mismatch_amber_bg">#231804</color>
+    <color name="mismatch_amber_border">#B45309</color>
 </resources>

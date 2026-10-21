@@ -238,7 +238,9 @@ object MediaScanner {
             duplicateCount = duplicateCount,
             missingMetadataCount = (totalFiles - matchedCount).coerceAtLeast(0),
             detectedTimezone = detectedTimezone,
-            estimatedTimeSeconds = estimatedSec
+            estimatedTimeSeconds = estimatedSec,
+            totalMetadataEntries = distinctMemoryItems.size,
+            hasMetadataFile = metadataDocs.isNotEmpty()
         )
 
         onProgress?.invoke(
