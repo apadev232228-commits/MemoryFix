@@ -303,6 +303,9 @@ object MediaScanner {
         private val videosByLocalDate = mutableMapOf<String, MutableList<MemoryItem>>()
         private val allByLocalDate = mutableMapOf<String, MutableList<MemoryItem>>()
 
+        // Track consumed indices for same-day fallback to distribute UUID files across distinct timestamps
+        private val consumedDateIndices = mutableMapOf<String, Int>()
+
         init {
             val list = mutableListOf<ParsedMemory>()
             val zone = try { ZoneId.of(targetTimeZoneId) } catch (e: Exception) { ZoneId.of("UTC") }
@@ -431,7 +434,9 @@ object MediaScanner {
             // 3. Priority 3: Fallback when filename only contains date (e.g. 2023-08-14.jpg, 2023-08-14_<uuid>-main.jpg)
             val dateKey = DateExtractor.extractDateKey(fileName)
             if (dateKey != null) {
+                val hasExplicitSeq = fileName.contains(Regex("""\d{4}[-_]\d{2}[-_]\d{2}[-_(\s]+\d+\)?"""))
                 val seqIndex = DateExtractor.extractSequenceIndex(fileName)
+                val lookupKey = "${dateKey}_${isVideo}"
 
                 val candidateList = (if (isVideo) videosByUtcDate[dateKey] else photosByUtcDate[dateKey])
                     ?: (if (isVideo) videosByLocalDate[dateKey] else photosByLocalDate[dateKey])
@@ -439,10 +444,12 @@ object MediaScanner {
                     ?: allByLocalDate[dateKey]
 
                 if (!candidateList.isNullOrEmpty()) {
-                    return if (seqIndex < candidateList.size) {
-                        candidateList[seqIndex]
+                    return if (hasExplicitSeq) {
+                        if (seqIndex < candidateList.size) candidateList[seqIndex] else candidateList.last()
                     } else {
-                        candidateList.last()
+                        val nextIdx = consumedDateIndices.getOrDefault(lookupKey, 0)
+                        consumedDateIndices[lookupKey] = nextIdx + 1
+                        candidateList[nextIdx % candidateList.size]
                     }
                 }
             }
