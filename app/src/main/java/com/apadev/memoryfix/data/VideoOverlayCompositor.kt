@@ -38,8 +38,40 @@ object VideoOverlayCompositor {
         val tempOutputFile = File(cacheDir, "temp_vout_${System.currentTimeMillis()}_${videoFile.name}")
 
         try {
-            val overlayBitmap = BitmapFactory.decodeFile(overlayFile.absolutePath)
+            val rawOverlayBitmap = BitmapFactory.decodeFile(overlayFile.absolutePath)
                 ?: return@withContext false
+
+            var videoWidth = 0
+            var videoHeight = 0
+            val retriever = android.media.MediaMetadataRetriever()
+            try {
+                retriever.setDataSource(videoFile.absolutePath)
+                val widthStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                val heightStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                val rotStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                val w = widthStr?.toIntOrNull() ?: 0
+                val h = heightStr?.toIntOrNull() ?: 0
+                val rot = rotStr?.toIntOrNull() ?: 0
+                if (rot == 90 || rot == 270) {
+                    videoWidth = h
+                    videoHeight = w
+                } else {
+                    videoWidth = w
+                    videoHeight = h
+                }
+            } catch (e: Exception) {
+                // Ignore metadata read error
+            } finally {
+                try { retriever.release() } catch (e: Exception) {}
+            }
+
+            val overlayBitmap = if (videoWidth > 0 && videoHeight > 0 && (rawOverlayBitmap.width != videoWidth || rawOverlayBitmap.height != videoHeight)) {
+                val scaled = android.graphics.Bitmap.createScaledBitmap(rawOverlayBitmap, videoWidth, videoHeight, true)
+                rawOverlayBitmap.recycle()
+                scaled
+            } else {
+                rawOverlayBitmap
+            }
 
             val bitmapOverlay = BitmapOverlay.createStaticBitmapOverlay(overlayBitmap)
             val overlayEffect = OverlayEffect(listOf(bitmapOverlay))
