@@ -258,7 +258,8 @@ class ExportProcessWorker(
                     val vSuccess = ExifManager.applyMetadataToVideo(
                         context = context,
                         uri = item.uri,
-                        epochMillis = epochMillis
+                        epochMillis = epochMillis,
+                        coordinates = coordinates
                     )
                     if (vSuccess) {
                         videosFixed++
@@ -480,7 +481,7 @@ class ExportProcessWorker(
                                             }
                                         }
 
-                                        ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epochMillis)
+                                        ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epochMillis, coordinates)
                                         MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
                                         videosFixed++
                                     }
@@ -547,17 +548,29 @@ class ExportProcessWorker(
                     ?: 0L
                 val duration = meta?.durationSeconds ?: 0f
                 ChunkCandidate(file, media, creation, duration)
-            }.sortedWith(compareBy({ it.creationEpoch }, { it.file.name }))
+            }.sortedWith(
+                compareByDescending<ChunkCandidate> { File(overlayCacheDir, "${MediaScanner.extractCanonicalBaseKey(it.file.name)}.png").exists() }
+                    .thenBy { it.creationEpoch }
+                    .thenBy { it.file.name }
+            )
 
-            // 1. Detect duplicates: identical file sizes (< 500B diff) and identical durations (< 0.08s diff)
+            // Helper to detect duplicate video variations (same timestamp down to the second,
+            // duration match down to decimals < 0.05s, and byte size diff < 150KB / 3%)
+            fun isDuplicateCandidate(c1: ChunkCandidate, c2: ChunkCandidate): Boolean {
+                val durDiff = Math.abs(c1.durationSeconds - c2.durationSeconds)
+                if (durDiff >= 0.05f) return false
+                val sizeDiff = Math.abs(c1.file.length() - c2.file.length())
+                if (sizeDiff < 500L) return true
+                val maxLen = Math.max(c1.file.length(), c2.file.length())
+                val sizeDiffPct = if (maxLen > 0L) sizeDiff.toFloat() / maxLen else 0f
+                return sizeDiff < 150_000L && sizeDiffPct < 0.03f
+            }
+
+            // 1. Detect duplicates: identical file sizes (< 500B diff) or filtered variations (< 0.05s dur diff, < 3% size diff)
             var hasDuplicates = false
             for (i in 0 until candidates.size) {
                 for (j in i + 1 until candidates.size) {
-                    val c1 = candidates[i]
-                    val c2 = candidates[j]
-                    val sizeDiff = Math.abs(c1.file.length() - c2.file.length())
-                    val durDiff = Math.abs(c1.durationSeconds - c2.durationSeconds)
-                    if (sizeDiff < 500L && durDiff < 0.08f) {
+                    if (isDuplicateCandidate(candidates[i], candidates[j])) {
                         hasDuplicates = true
                         break
                     }
@@ -577,7 +590,12 @@ class ExportProcessWorker(
 
             if (isTrueMultiSnap) {
                 val orderedFiles = candidates.map { it.file }
-                val merged = VideoChunkMerger.fastRemuxChunks(orderedFiles, primaryDestFile)
+                val primaryMedia = mediaByFileName[primaryName]
+                val chunkCoords = if (embedLocation) {
+                    primaryMedia?.matchedMemory?.parseCoordinates()
+                        ?: candidates.firstOrNull { it.media.matchedMemory?.parseCoordinates() != null }?.media?.matchedMemory?.parseCoordinates()
+                } else null
+                val merged = VideoChunkMerger.fastRemuxChunks(orderedFiles, primaryDestFile, chunkCoords)
                 if (merged) {
                     mergedSuccessfully = true
 
@@ -619,10 +637,9 @@ class ExportProcessWorker(
                         }
                     }
 
-                    val primaryMedia = mediaByFileName[primaryName]
                     val epochMillis = primaryMedia?.matchedMemory?.parseEpochMillis()
                         ?: candidates.first().creationEpoch
-                    ExifManager.applyMetadataToVideo(context, Uri.fromFile(primaryDestFile), epochMillis)
+                    ExifManager.applyMetadataToVideo(context, Uri.fromFile(primaryDestFile), epochMillis, chunkCoords)
                     MediaScannerConnection.scanFile(context, arrayOf(primaryDestFile.absolutePath), null, null)
                     videosFixed++
                 }
@@ -633,11 +650,7 @@ class ExportProcessWorker(
                 val filesToSave = if (skipDuplicates && hasDuplicates) {
                     val unique = mutableListOf<ChunkCandidate>()
                     for (cand in candidates) {
-                        val isDup = unique.any { prev ->
-                            val sizeDiff = Math.abs(prev.file.length() - cand.file.length())
-                            val durDiff = Math.abs(prev.durationSeconds - cand.durationSeconds)
-                            sizeDiff < 500L && durDiff < 0.08f
-                        }
+                        val isDup = unique.any { prev -> isDuplicateCandidate(prev, cand) }
                         if (!isDup) {
                             unique.add(cand)
                         }
@@ -676,7 +689,8 @@ class ExportProcessWorker(
                     }
 
                     val epoch = chunk.media.matchedMemory?.parseEpochMillis() ?: chunk.creationEpoch
-                    ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epoch)
+                    val chunkCoords = if (embedLocation) chunk.media.matchedMemory?.parseCoordinates() else null
+                    ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epoch, chunkCoords)
                     MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
                     videosFixed++
                 }

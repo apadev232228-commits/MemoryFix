@@ -628,7 +628,9 @@ object MediaScanner {
                         val v2 = videosAtTimestamp[j]
                         val sizeDiff = Math.abs(v1.size - v2.size)
                         val durDiff = Math.abs(v1.mp4Meta!!.durationSeconds - v2.mp4Meta!!.durationSeconds)
-                        if (sizeDiff < 500L && durDiff < 0.08f) {
+                        val maxLen = Math.max(v1.size, v2.size)
+                        val sizeDiffPct = if (maxLen > 0L) sizeDiff.toFloat() / maxLen else 0f
+                        if (durDiff < 0.05f && (sizeDiff < 500L || (sizeDiff < 150_000L && sizeDiffPct < 0.03f))) {
                             hasDuplicates = true
                             break
                         }
