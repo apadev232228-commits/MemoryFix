@@ -177,6 +177,12 @@ class ExportProcessWorker(
                 continue
             }
 
+            // Skip duplicate photos or duplicate videos if skipDuplicates is true
+            if (skipDuplicates && item.isDuplicate) {
+                processed++
+                continue
+            }
+
             processed++
             val fileName = item.name
 
@@ -430,16 +436,11 @@ class ExportProcessWorker(
                                     ?: 0L
                                 val coordinates = if (embedLocation) memory?.parseCoordinates() else null
 
-                                // Skip duplicate photos or single standalone videos if skipDuplicates is true
-                                val entrySize = entry.size
-                                if (skipDuplicates && !isSecondary && (chunkGroup == null || chunkGroup.size <= 1) && entrySize > 0L && epochMillis > 0L) {
-                                    val dateKey = DateExtractor.extractDateKey(baseName) ?: "unknown"
-                                    val sig = "${dateKey}_${epochMillis / 1000L}_${entrySize}"
-                                    if (seenMediaSignatures.contains(sig)) {
-                                        entry = zis.nextEntry
-                                        continue
-                                    }
-                                    seenMediaSignatures.add(sig)
+                                // Skip duplicate photos or duplicate videos if skipDuplicates is true
+                                if (skipDuplicates && mediaItem.isDuplicate) {
+                                    processed++
+                                    entry = zis.nextEntry
+                                    continue
                                 }
 
                                 processed++

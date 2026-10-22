@@ -20,7 +20,8 @@ data class ScannedMedia(
     var matchedMemory: MemoryItem? = null,
     var mp4Meta: ExifManager.Mp4Meta? = null,
     var zipEntryPath: String? = null,
-    var zipUri: Uri? = null
+    var zipUri: Uri? = null,
+    var isDuplicate: Boolean = false
 )
 
 data class FullScanResult(
@@ -146,26 +147,22 @@ object MediaScanner {
 
         walk(root)
 
-        // Deduplicate memories: detect duplicate Snapchat throwback/flashback story re-saves.
-        // Snapchat re-exports identical media files with later date prefixes (e.g. 2021-04-02_<UUID> vs original 2021-03-28_<UUID>).
-        // We preserve the true original capture (earliest date) and filter out duplicate flashback copies.
-        val mediaDocs = mutableListOf<DocumentFile>()
-        var photoCount = 0
-        var videoCount = 0
-        var duplicateCount = 0
+        // Deduplicate memories:
+        // 1. Detect duplicate Snapchat throwback/flashback story re-saves (same UUID + size)
+        // 2. Detect same-date + same-size photo and video duplicates
+        val duplicateDocNames = mutableSetOf<String>()
 
         val groupedDocsByUuid = rawMediaDocs.groupBy { doc ->
             val name = doc.name ?: ""
             val uuid = extractSnapchatUuid(name)
-            if (uuid != null) "uuid_${uuid}_${doc.length()}" else "name_$name"
+            val len = doc.length()
+            if (uuid != null && len > 0L) "uuid_${uuid}_${len}" else "name_$name"
         }
 
+        val primaryDocsAfterUuid = mutableListOf<DocumentFile>()
         for ((_, group) in groupedDocsByUuid) {
             if (group.size == 1) {
-                val doc = group.first()
-                mediaDocs.add(doc)
-                val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
-                if (VIDEO_EXTENSIONS.contains(ext)) videoCount++ else photoCount++
+                primaryDocsAfterUuid.add(group.first())
             } else {
                 val sorted = group.sortedWith(Comparator { a, b ->
                     val dateA = DateExtractor.extractDateKey(a.name ?: "") ?: ""
@@ -176,14 +173,45 @@ object MediaScanner {
                         a.lastModified().compareTo(b.lastModified())
                     }
                 })
-                val original = sorted.first()
-                mediaDocs.add(original)
-                val ext = (original.name ?: "").lowercase().substringAfterLast('.', "")
-                if (VIDEO_EXTENSIONS.contains(ext)) videoCount++ else photoCount++
-                duplicateCount += (sorted.size - 1)
+                primaryDocsAfterUuid.add(sorted.first())
+                for (dup in sorted.drop(1)) {
+                    val n = dup.name
+                    if (n != null) duplicateDocNames.add(n)
+                }
             }
         }
-        val totalMedia = mediaDocs.size
+
+        val groupedDocsByDateAndSize = primaryDocsAfterUuid.groupBy { doc ->
+            val n = doc.name ?: ""
+            val dateKey = DateExtractor.extractDateKey(n) ?: "unknown"
+            val len = doc.length()
+            val ext = n.lowercase().substringAfterLast('.', "")
+            val isVid = VIDEO_EXTENSIONS.contains(ext)
+            if (len > 0L) "${dateKey}_${len}_${isVid}" else "name_$n"
+        }
+
+        for ((_, group) in groupedDocsByDateAndSize) {
+            if (group.size > 1) {
+                val sorted = group.sortedBy { it.name ?: "" }
+                for (dup in sorted.drop(1)) {
+                    val n = dup.name
+                    if (n != null) duplicateDocNames.add(n)
+                }
+            }
+        }
+
+        val mediaDocs = rawMediaDocs
+        val uniqueDocs = rawMediaDocs.filter { !duplicateDocNames.contains(it.name) }
+        val photoCount = uniqueDocs.count { doc ->
+            val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
+            !VIDEO_EXTENSIONS.contains(ext)
+        }
+        val videoCount = uniqueDocs.count { doc ->
+            val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
+            VIDEO_EXTENSIONS.contains(ext)
+        }
+        val duplicateCount = duplicateDocNames.size
+        val totalMedia = uniqueDocs.size
 
         // Parse JSON / HTML metadata if found
         onProgress?.invoke(
@@ -275,7 +303,8 @@ object MediaScanner {
                     size = size,
                     overlayUri = overlay?.uri,
                     matchedMemory = matched,
-                    mp4Meta = mp4Meta
+                    mp4Meta = mp4Meta,
+                    isDuplicate = duplicateDocNames.contains(name)
                 )
             )
 
@@ -399,26 +428,26 @@ object MediaScanner {
             }
         }
 
-        // Deduplicate memories: detect duplicate Snapchat throwback/flashback story re-saves
-        // Snapchat re-exports identical media files with later date prefixes (e.g., 2021-04-02_<UUID> vs original 2021-03-28_<UUID>).
-        // We preserve the true original capture (earliest date) and filter out duplicate flashback copies.
-        val mediaEntries = mutableListOf<ZipEntryInfo>()
-        var photoCount = 0
-        var videoCount = 0
-        var duplicateCount = 0
+        // Deduplicate memories:
+        // 1. Detect duplicate Snapchat throwback/flashback story re-saves (same UUID + size)
+        // 2. Detect same-date + same-size photo and video duplicates
+        val duplicateNames = mutableSetOf<String>()
 
         val groupedByUuid = rawMediaEntries.groupBy { entry ->
             val uuid = extractSnapchatUuid(entry.baseName)
-            if (uuid != null) "uuid_${uuid}_${entry.uncompressedSize}" else "name_${entry.baseName}"
+            if (uuid != null && entry.uncompressedSize > 0L) {
+                "uuid_${uuid}_${entry.uncompressedSize}"
+            } else {
+                "name_${entry.baseName}"
+            }
         }
+
+        val primaryAfterUuid = mutableListOf<ZipEntryInfo>()
 
         for ((_, group) in groupedByUuid) {
             if (group.size == 1) {
-                val item = group.first()
-                mediaEntries.add(item)
-                if (item.isVideo) videoCount++ else photoCount++
+                primaryAfterUuid.add(group.first())
             } else {
-                // Sort ascending by parsed date in filename or timestamp to keep the earliest original capture
                 val sorted = group.sortedWith(Comparator { a, b ->
                     val dateA = DateExtractor.extractDateKey(a.baseName) ?: ""
                     val dateB = DateExtractor.extractDateKey(b.baseName) ?: ""
@@ -428,14 +457,38 @@ object MediaScanner {
                         a.epochMillis.compareTo(b.epochMillis)
                     }
                 })
-                val original = sorted.first()
-                mediaEntries.add(original)
-                if (original.isVideo) videoCount++ else photoCount++
-                duplicateCount += (sorted.size - 1)
+                primaryAfterUuid.add(sorted.first())
+                for (dup in sorted.drop(1)) {
+                    duplicateNames.add(dup.baseName)
+                }
             }
         }
 
-        val totalMedia = mediaEntries.size
+        // Pass 2: Detect duplicate photos and duplicate videos sharing the same date prefix and identical byte size
+        val groupedByDateAndSize = primaryAfterUuid.groupBy { entry ->
+            val dateKey = DateExtractor.extractDateKey(entry.baseName) ?: "unknown"
+            if (entry.uncompressedSize > 0L) {
+                "${dateKey}_${entry.uncompressedSize}_${entry.isVideo}"
+            } else {
+                "name_${entry.baseName}"
+            }
+        }
+
+        for ((_, group) in groupedByDateAndSize) {
+            if (group.size > 1) {
+                val sorted = group.sortedBy { it.baseName }
+                for (dup in sorted.drop(1)) {
+                    duplicateNames.add(dup.baseName)
+                }
+            }
+        }
+
+        val uniqueEntries = rawMediaEntries.filter { !duplicateNames.contains(it.baseName) }
+        val photoCount = uniqueEntries.count { !it.isVideo }
+        val videoCount = uniqueEntries.count { it.isVideo }
+        val duplicateCount = duplicateNames.size
+        val totalMedia = uniqueEntries.size
+
         val distinctHistory = historyItems.distinctBy { "${it.dateString}_${it.mediaType}_${it.locationString}" }
         val matcher = MemoryMatcher(distinctHistory, targetTimeZone)
 
@@ -445,7 +498,7 @@ object MediaScanner {
         val mediaList = mutableListOf<ScannedMedia>()
 
         // Sort entries by exact ZIP timestamp
-        val sortedEntries = mediaEntries.sortedWith(Comparator { a, b ->
+        val sortedEntries = rawMediaEntries.sortedWith(Comparator { a, b ->
             if (a.epochMillis != b.epochMillis) {
                 a.epochMillis.compareTo(b.epochMillis)
             } else {
@@ -468,6 +521,7 @@ object MediaScanner {
             )
             if (matched != null) matchedCount++
 
+            val isDup = duplicateNames.contains(entry.baseName)
             val media = ScannedMedia(
                 uri = entry.zipUri,
                 name = entry.baseName,
@@ -475,7 +529,8 @@ object MediaScanner {
                 size = entry.uncompressedSize,
                 overlayUri = overlay?.zipUri,
                 matchedMemory = matched,
-                mp4Meta = if (entry.isVideo && entry.epochMillis > 0) ExifManager.Mp4Meta(entry.epochMillis, 10f) else null
+                mp4Meta = if (entry.isVideo && entry.epochMillis > 0) ExifManager.Mp4Meta(entry.epochMillis, 10f) else null,
+                isDuplicate = isDup
             )
             media.zipEntryPath = entry.entryPath
             media.zipUri = entry.zipUri
@@ -541,7 +596,7 @@ object MediaScanner {
      * Prevents false-positive merging of independent snaps recorded seconds or minutes apart.
      */
     fun detectVideoChunks(mediaList: List<ScannedMedia>): List<List<ScannedMedia>> {
-        val videosByTimestamp = mediaList.filter { it.isVideo }
+        val videosByTimestamp = mediaList.filter { it.isVideo && !it.isDuplicate }
             .filter {
                 val epoch = it.matchedMemory?.parseEpochMillis()
                     ?: it.mp4Meta?.creationEpochMillis
