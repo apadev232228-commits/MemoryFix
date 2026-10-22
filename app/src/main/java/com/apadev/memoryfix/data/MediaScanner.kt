@@ -667,10 +667,84 @@ object MediaScanner {
      * - Snapchat export video/photo processing delays (1-60s skew)
      * - Media type matching (PHOTO vs VIDEO)
      */
-    private class MemoryMatcher(
+    internal class MemoryMatcher(
         items: List<MemoryItem>,
-        targetTimeZoneId: String = "UTC"
+        targetTimeZoneId: String = "UTC",
+        maxLocationInterpolationGapMillis: Long = 30 * 60 * 1000L // 30 minutes
     ) {
+        companion object {
+            /**
+             * Calculates great-circle distance between two GPS coordinates in kilometers.
+             */
+            fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+                val r = 6371.0
+                val dLat = Math.toRadians(lat2 - lat1)
+                val dLon = Math.toRadians(lon2 - lon1)
+                val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+                val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+                return r * c
+            }
+
+            /**
+             * Intelligently interpolates missing/zero GPS coordinates for memories that fall
+             * within [maxGapMillis] (default: 30 minutes) of nearby memories with valid location data.
+             * Includes spatial sanity check: if both before & after neighbors are present,
+             * requires them to be within 2.0 km of each other (to avoid tagging mid-travel/flights).
+             */
+            fun interpolateMissingLocations(
+                items: List<MemoryItem>,
+                maxGapMillis: Long = 30 * 60 * 1000L // 30 minutes
+            ): List<MemoryItem> {
+                val validItems = items
+                    .filter { it.parseCoordinates() != null && it.parseEpochMillis() != null }
+                    .sortedBy { it.parseEpochMillis()!! }
+
+                if (validItems.isEmpty()) return items
+
+                return items.map { item ->
+                    if (item.parseCoordinates() != null) {
+                        item
+                    } else {
+                        val epoch = item.parseEpochMillis()
+                        if (epoch == null) {
+                            item
+                        } else {
+                            val before = validItems.lastOrNull { it.parseEpochMillis()!! <= epoch }
+                            val after = validItems.firstOrNull { it.parseEpochMillis()!! >= epoch }
+
+                            val gapBefore = if (before != null) epoch - before.parseEpochMillis()!! else Long.MAX_VALUE
+                            val gapAfter = if (after != null) after.parseEpochMillis()!! - epoch else Long.MAX_VALUE
+
+                            var chosenCoords: Pair<Double, Double>? = null
+
+                            if (gapBefore <= maxGapMillis && gapAfter <= maxGapMillis) {
+                                val bCoords = before?.parseCoordinates()
+                                val aCoords = after?.parseCoordinates()
+                                if (bCoords != null && aCoords != null) {
+                                    val distKm = haversineKm(bCoords.first, bCoords.second, aCoords.first, aCoords.second)
+                                    if (distKm <= 2.0) {
+                                        chosenCoords = if (gapBefore <= gapAfter) bCoords else aCoords
+                                    }
+                                }
+                            } else if (gapBefore <= maxGapMillis) {
+                                chosenCoords = before?.parseCoordinates()
+                            } else if (gapAfter <= maxGapMillis) {
+                                chosenCoords = after?.parseCoordinates()
+                            }
+
+                            if (chosenCoords != null) {
+                                item.copy(locationString = "Latitude, Longitude: ${chosenCoords.first}, ${chosenCoords.second}")
+                            } else {
+                                item
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private val exactKeyMap = mutableMapOf<String, MemoryItem>()
 
         private class ParsedMemory(
@@ -693,10 +767,16 @@ object MediaScanner {
         private val consumedDateIndices = mutableMapOf<String, Int>()
 
         init {
+            val processedItems = if (maxLocationInterpolationGapMillis > 0) {
+                interpolateMissingLocations(items, maxLocationInterpolationGapMillis)
+            } else {
+                items
+            }
+
             val list = mutableListOf<ParsedMemory>()
             val zone = try { ZoneId.of(targetTimeZoneId) } catch (e: Exception) { ZoneId.of("UTC") }
 
-            for (item in items) {
+            for (item in processedItems) {
                 val date = item.dateString
                 val epoch = item.parseEpochMillis()
                 val isVideo = item.isVideo()
