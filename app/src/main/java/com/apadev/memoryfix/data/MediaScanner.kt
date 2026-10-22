@@ -561,14 +561,28 @@ object MediaScanner {
         for ((_, videosAtTimestamp) in videosByTimestamp) {
             if (videosAtTimestamp.size < 2) continue
 
-            // If mp4Meta is known for all items (e.g. folder mode), verify duration criteria
+            // If mp4Meta is known for all items (e.g. folder mode), verify duration criteria & no duplicates
             val allHaveMeta = videosAtTimestamp.all { it.mp4Meta != null }
             if (allHaveMeta) {
-                val sorted = videosAtTimestamp.sortedBy { it.mp4Meta!!.creationEpochMillis }
-                val initialValid = sorted.dropLast(1).all { it.mp4Meta!!.durationSeconds in 8.5f..12.5f }
-                val lastValid = sorted.last().mp4Meta!!.durationSeconds in 0.5f..12.5f
-                if (initialValid && lastValid) {
-                    groups.add(sorted)
+                var hasDuplicates = false
+                for (i in 0 until videosAtTimestamp.size) {
+                    for (j in i + 1 until videosAtTimestamp.size) {
+                        val durDiff = Math.abs(videosAtTimestamp[i].mp4Meta!!.durationSeconds - videosAtTimestamp[j].mp4Meta!!.durationSeconds)
+                        if (durDiff < 0.08f) {
+                            hasDuplicates = true
+                            break
+                        }
+                    }
+                    if (hasDuplicates) break
+                }
+
+                if (!hasDuplicates) {
+                    val sorted = videosAtTimestamp.sortedBy { it.mp4Meta!!.creationEpochMillis }
+                    val initialValid = sorted.dropLast(1).all { it.mp4Meta!!.durationSeconds in 8.5f..12.5f }
+                    val lastValid = sorted.last().mp4Meta!!.durationSeconds in 0.5f..12.5f
+                    if (initialValid && lastValid) {
+                        groups.add(sorted)
+                    }
                 }
             } else {
                 // In zip scan without extracted files yet, sort by name and add as candidate

@@ -251,10 +251,11 @@ class AnalysisFragment : Fragment() {
         }
 
         if (s.duplicateCount > 0) {
-            binding.cardDuplicates.visibility = View.VISIBLE
-            binding.tvDuplicateTitle.text = "${numberFormat.format(s.duplicateCount)} duplicate files handled automatically"
+            binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
+            binding.tvSkipDuplicatesDesc.text = "${numberFormat.format(s.duplicateCount)} duplicate memories found — keep only 1 clean copy"
         } else {
-            binding.cardDuplicates.visibility = View.GONE
+            binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
+            binding.tvSkipDuplicatesDesc.text = "Keeps only 1 copy of identical re-saved memories"
         }
 
         // Mismatch Alert (Visible only when needed)
@@ -367,12 +368,14 @@ class AnalysisFragment : Fragment() {
         val mergeOverlays = binding.switchOverlay.isChecked
         val burnVideoOverlays = binding.switchVideoOverlay.isChecked
         val mergeVideoChunks = binding.switchMergeVideoChunks.isChecked
+        val skipDuplicates = binding.switchSkipDuplicates.isChecked
 
         val inputDataBuilder = Data.Builder()
             .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, embedLocation)
             .putBoolean(ExportProcessWorker.KEY_MERGE_OVERLAYS, mergeOverlays)
             .putBoolean(ExportProcessWorker.KEY_BURN_VIDEO_OVERLAYS, burnVideoOverlays)
             .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, mergeVideoChunks)
+            .putBoolean(ExportProcessWorker.KEY_SKIP_DUPLICATES, skipDuplicates)
             .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
 
         if (isZipSource) {

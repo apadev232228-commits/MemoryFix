@@ -41,6 +41,7 @@ class ExportProcessWorker(
         const val KEY_MERGE_OVERLAYS = "KEY_MERGE_OVERLAYS"
         const val KEY_BURN_VIDEO_OVERLAYS = "KEY_BURN_VIDEO_OVERLAYS"
         const val KEY_MERGE_VIDEO_CHUNKS = "KEY_MERGE_VIDEO_CHUNKS"
+        const val KEY_SKIP_DUPLICATES = "KEY_SKIP_DUPLICATES"
         const val KEY_TIMEZONE = "KEY_TIMEZONE"
 
         const val PROGRESS_CURRENT = "PROGRESS_CURRENT"
@@ -70,6 +71,7 @@ class ExportProcessWorker(
         val mergeOverlays = inputData.getBoolean(KEY_MERGE_OVERLAYS, true)
         val burnVideoOverlays = inputData.getBoolean(KEY_BURN_VIDEO_OVERLAYS, false)
         val mergeVideoChunks = inputData.getBoolean(KEY_MERGE_VIDEO_CHUNKS, true)
+        val skipDuplicates = inputData.getBoolean(KEY_SKIP_DUPLICATES, true)
         val timeZone = inputData.getString(KEY_TIMEZONE) ?: "UTC"
 
         createNotificationChannel()
@@ -90,6 +92,7 @@ class ExportProcessWorker(
                 mergeOverlays = mergeOverlays,
                 burnVideoOverlays = burnVideoOverlays,
                 mergeVideoChunks = mergeVideoChunks,
+                skipDuplicates = skipDuplicates,
                 timeZone = timeZone,
                 notificationManager = notificationManager
             )
@@ -329,6 +332,7 @@ class ExportProcessWorker(
         mergeOverlays: Boolean,
         burnVideoOverlays: Boolean,
         mergeVideoChunks: Boolean,
+        skipDuplicates: Boolean,
         timeZone: String,
         notificationManager: NotificationManager
     ): Result {
@@ -404,6 +408,8 @@ class ExportProcessWorker(
         }
 
         // Step 2: Extract & fix media in one sequential stream pass
+        val seenMediaSignatures = mutableSetOf<String>()
+
         for (zipUri in zipUris) {
             try {
                 context.contentResolver.openInputStream(zipUri)?.use { rawStream ->
@@ -415,12 +421,6 @@ class ExportProcessWorker(
                             val mediaItem = mediaByFileName[baseName]
 
                             if (mediaItem != null) {
-                                processed++
-                                if (processed % 5 == 0 || processed == total) {
-                                    val notif = createNotification(processed, total, "Fixing: $baseName")
-                                    notificationManager.notify(NOTIFICATION_ID, notif)
-                                }
-
                                 val isSecondary = secondaryChunkNames.contains(baseName)
                                 val chunkGroup = chunkGroupMap[baseName]
 
@@ -429,6 +429,24 @@ class ExportProcessWorker(
                                     ?: mediaItem.mp4Meta?.creationEpochMillis
                                     ?: 0L
                                 val coordinates = if (embedLocation) memory?.parseCoordinates() else null
+
+                                // Skip duplicate photos or single standalone videos if skipDuplicates is true
+                                val entrySize = entry.size
+                                if (skipDuplicates && !isSecondary && (chunkGroup == null || chunkGroup.size <= 1) && entrySize > 0L && epochMillis > 0L) {
+                                    val dateKey = DateExtractor.extractDateKey(baseName) ?: "unknown"
+                                    val sig = "${dateKey}_${epochMillis / 1000L}_${entrySize}"
+                                    if (seenMediaSignatures.contains(sig)) {
+                                        entry = zis.nextEntry
+                                        continue
+                                    }
+                                    seenMediaSignatures.add(sig)
+                                }
+
+                                processed++
+                                if (processed % 5 == 0 || processed == total) {
+                                    val notif = createNotification(processed, total, "Fixing: $baseName")
+                                    notificationManager.notify(NOTIFICATION_ID, notif)
+                                }
 
                                 if (mediaItem.isVideo) {
                                     if (isSecondary || (chunkGroup != null && chunkGroup.size > 1)) {
@@ -530,12 +548,29 @@ class ExportProcessWorker(
                 ChunkCandidate(file, media, creation, duration)
             }.sortedWith(compareBy({ it.creationEpoch }, { it.file.name }))
 
+            // 1. Detect duplicates: identical file sizes (< 500B diff) and identical durations (< 0.08s diff)
+            var hasDuplicates = false
+            for (i in 0 until candidates.size) {
+                for (j in i + 1 until candidates.size) {
+                    val c1 = candidates[i]
+                    val c2 = candidates[j]
+                    val sizeDiff = Math.abs(c1.file.length() - c2.file.length())
+                    val durDiff = Math.abs(c1.durationSeconds - c2.durationSeconds)
+                    if (sizeDiff < 500L && durDiff < 0.08f) {
+                        hasDuplicates = true
+                        break
+                    }
+                }
+                if (hasDuplicates) break
+            }
+
             // Verify Snapchat multi-snap continuous recording criteria:
-            // 1. Initial chunks are in full ~10s recording buffers (8.5s..12.5s)
-            // 2. Final chunk is up to 12.5s (> 0.5s)
+            // 1. Must NOT contain duplicates
+            // 2. Initial chunks are in full ~10s recording buffers (8.5s..12.5s)
+            // 3. Final chunk is up to 12.5s (> 0.5s)
             val initialChunksValid = candidates.dropLast(1).all { it.durationSeconds in 8.5f..12.5f }
             val lastChunkValid = candidates.last().durationSeconds in 0.5f..12.5f
-            val isTrueMultiSnap = candidates.size > 1 && initialChunksValid && lastChunkValid
+            val isTrueMultiSnap = !hasDuplicates && candidates.size > 1 && initialChunksValid && lastChunkValid
 
             var mergedSuccessfully = false
 
@@ -593,8 +628,26 @@ class ExportProcessWorker(
             }
 
             if (!mergedSuccessfully) {
+                // If skipDuplicates is enabled and group has duplicates, keep only 1 clean copy
+                val filesToSave = if (skipDuplicates && hasDuplicates) {
+                    val unique = mutableListOf<ChunkCandidate>()
+                    for (cand in candidates) {
+                        val isDup = unique.any { prev ->
+                            val sizeDiff = Math.abs(prev.file.length() - cand.file.length())
+                            val durDiff = Math.abs(prev.durationSeconds - cand.durationSeconds)
+                            sizeDiff < 500L && durDiff < 0.08f
+                        }
+                        if (!isDup) {
+                            unique.add(cand)
+                        }
+                    }
+                    unique
+                } else {
+                    candidates
+                }
+
                 // Standalone fallback: preserve each chunk independently
-                for (chunk in candidates) {
+                for (chunk in filesToSave) {
                     val destFile = File(outputDir, chunk.file.name)
                     chunk.file.copyTo(destFile, overwrite = true)
 

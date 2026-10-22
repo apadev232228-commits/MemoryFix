@@ -651,30 +651,45 @@
                             android:checked="false" />
                     </RelativeLayout>
 
-                    <!-- Duplicates Note -->
-                    <LinearLayout
-                        android:id="@+id/cardDuplicates"
+                    <!-- Toggle: Skip Duplicate Memories -->
+                    <RelativeLayout
+                        android:id="@+id/layoutSkipDuplicatesOption"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="12dp">
 
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_info"
-                            app:tint="@color/text_secondary" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_toStartOf="@+id/switchSkipDuplicates"
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/tvDuplicateTitle"
+                            <TextView
+                                android:id="@+id/tvSkipDuplicatesTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Skip Duplicate Memories"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvSkipDuplicatesDesc"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Keeps only 1 clean copy of identical re-saved memories"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchSkipDuplicates"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:text="Duplicate files handled automatically"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:checked="true" />
+                    </RelativeLayout>
                 </LinearLayout>
             </LinearLayout>
 
