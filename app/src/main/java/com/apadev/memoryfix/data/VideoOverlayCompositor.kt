@@ -22,35 +22,29 @@ import java.io.FileOutputStream
 object VideoOverlayCompositor {
 
     /**
-     * Bakes a PNG overlay into an MP4 video in-place using Jetpack Media3 Transformer.
+     * Bakes a PNG overlay into an MP4 video file in-place using Jetpack Media3 Transformer.
      * Returns true if successfully re-encoded with overlay, false otherwise.
      */
     suspend fun compositeInPlace(
         context: Context,
-        videoUri: Uri,
-        overlayUri: Uri
+        videoFile: File,
+        overlayFile: File
     ): Boolean = withContext(Dispatchers.IO) {
+        if (!videoFile.exists() || !overlayFile.exists() || overlayFile.length() == 0L) {
+            return@withContext false
+        }
+
         val cacheDir = context.cacheDir
-        val tempInputFile = File(cacheDir, "temp_in_${System.currentTimeMillis()}.mp4")
-        val tempOutputFile = File(cacheDir, "temp_out_${System.currentTimeMillis()}.mp4")
+        val tempOutputFile = File(cacheDir, "temp_vout_${System.currentTimeMillis()}_${videoFile.name}")
 
         try {
-            // 1. Copy video from SAF into a local temp file for Transformer
-            context.contentResolver.openInputStream(videoUri)?.use { input ->
-                FileOutputStream(tempInputFile).use { output ->
-                    input.copyTo(output)
-                }
-            } ?: return@withContext false
-
-            // 2. Decode overlay bitmap
-            val overlayBitmap = context.contentResolver.openInputStream(overlayUri)?.use {
-                BitmapFactory.decodeStream(it)
-            } ?: return@withContext false
+            val overlayBitmap = BitmapFactory.decodeFile(overlayFile.absolutePath)
+                ?: return@withContext false
 
             val bitmapOverlay = BitmapOverlay.createStaticBitmapOverlay(overlayBitmap)
             val overlayEffect = OverlayEffect(listOf(bitmapOverlay))
 
-            val editedMediaItem = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(tempInputFile)))
+            val editedMediaItem = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(videoFile)))
                 .setEffects(Effects(emptyList(), listOf(overlayEffect)))
                 .build()
 
@@ -68,7 +62,7 @@ object VideoOverlayCompositor {
                             exportResult: ExportResult,
                             exportException: ExportException
                         ) {
-                            exportException.printStackTrace()
+                            android.util.Log.e("VideoOverlay", "Transformer error: ${exportException.message}", exportException)
                             completionSignal.complete(false)
                         }
                     })
@@ -77,7 +71,7 @@ object VideoOverlayCompositor {
                 try {
                     transformer.start(editedMediaItem, tempOutputFile.absolutePath)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    android.util.Log.e("VideoOverlay", "Failed to start transformer", e)
                     completionSignal.complete(false)
                 }
             }
@@ -86,15 +80,61 @@ object VideoOverlayCompositor {
             overlayBitmap.recycle()
 
             if (success && tempOutputFile.exists() && tempOutputFile.length() > 0) {
-                // 3. Write back into video SAF Uri
-                context.contentResolver.openOutputStream(videoUri, "wt")?.use { outStream ->
+                FileOutputStream(videoFile).use { outStream ->
                     FileInputStream(tempOutputFile).use { inStream ->
+                        inStream.copyTo(outStream)
+                    }
+                    outStream.flush()
+                }
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VideoOverlay", "Error compositing video overlay", e)
+            false
+        } finally {
+            if (tempOutputFile.exists()) {
+                tempOutputFile.delete()
+            }
+        }
+    }
+
+    /**
+     * Bakes a PNG overlay into an MP4 video SAF Uri in-place using Jetpack Media3 Transformer.
+     * Returns true if successfully re-encoded with overlay, false otherwise.
+     */
+    suspend fun compositeInPlace(
+        context: Context,
+        videoUri: Uri,
+        overlayUri: Uri
+    ): Boolean = withContext(Dispatchers.IO) {
+        val cacheDir = context.cacheDir
+        val tempInputFile = File(cacheDir, "temp_vin_${System.currentTimeMillis()}.mp4")
+        val tempOverlayFile = File(cacheDir, "temp_vov_${System.currentTimeMillis()}.png")
+
+        try {
+            context.contentResolver.openInputStream(videoUri)?.use { input ->
+                FileOutputStream(tempInputFile).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return@withContext false
+
+            context.contentResolver.openInputStream(overlayUri)?.use { input ->
+                FileOutputStream(tempOverlayFile).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return@withContext false
+
+            val success = compositeInPlace(context, tempInputFile, tempOverlayFile)
+            if (success && tempInputFile.exists() && tempInputFile.length() > 0) {
+                context.contentResolver.openOutputStream(videoUri, "wt")?.use { outStream ->
+                    FileInputStream(tempInputFile).use { inStream ->
                         inStream.copyTo(outStream)
                     }
                     outStream.flush()
                 } ?: return@withContext false
 
-                // 4. Delete overlay file so duplicate sticker isn't kept
                 try {
                     android.provider.DocumentsContract.deleteDocument(context.contentResolver, overlayUri)
                 } catch (e: Exception) {
@@ -112,7 +152,8 @@ object VideoOverlayCompositor {
             false
         } finally {
             if (tempInputFile.exists()) tempInputFile.delete()
-            if (tempOutputFile.exists()) tempOutputFile.delete()
+            if (tempOverlayFile.exists()) tempOverlayFile.delete()
         }
     }
 }
+

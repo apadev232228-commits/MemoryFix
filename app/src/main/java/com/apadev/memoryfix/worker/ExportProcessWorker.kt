@@ -20,6 +20,7 @@ import android.media.MediaScannerConnection
 import android.os.Environment
 import com.apadev.memoryfix.data.ScannedMedia
 import com.apadev.memoryfix.data.VideoChunkMerger
+import com.apadev.memoryfix.data.VideoOverlayCompositor
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -436,6 +437,30 @@ class ExportProcessWorker(
                                     } else {
                                         val destFile = File(outputDir, baseName)
                                         FileOutputStream(destFile).use { fos -> zis.copyTo(fos) }
+
+                                        val baseKey = MediaScanner.extractCanonicalBaseKey(baseName)
+                                        val cachedOverlay = File(overlayCacheDir, "$baseKey.png")
+                                        if (cachedOverlay.exists()) {
+                                            if (burnVideoOverlays) {
+                                                val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                                    context = context,
+                                                    videoFile = destFile,
+                                                    overlayFile = cachedOverlay
+                                                )
+                                                if (vMerged) {
+                                                    overlaysMerged++
+                                                } else {
+                                                    val destOverlay = File(outputDir, "$baseKey-overlay.png")
+                                                    cachedOverlay.copyTo(destOverlay, overwrite = true)
+                                                    MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                                                }
+                                            } else {
+                                                val destOverlay = File(outputDir, "$baseKey-overlay.png")
+                                                cachedOverlay.copyTo(destOverlay, overwrite = true)
+                                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                                            }
+                                        }
+
                                         ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epochMillis)
                                         MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
                                         videosFixed++
@@ -491,17 +516,114 @@ class ExportProcessWorker(
         for ((primaryName, group) in chunkGroupMap) {
             val chunkFiles = group.map { File(chunkCacheDir, it.name) }
             val allChunksExist = chunkFiles.all { it.exists() && it.length() > 0 }
+            if (!allChunksExist || chunkFiles.isEmpty()) continue
+
             val primaryDestFile = File(outputDir, primaryName)
 
-            if (allChunksExist && chunkFiles.size > 1) {
-                val merged = VideoChunkMerger.fastRemuxChunks(chunkFiles, primaryDestFile)
+            val candidates = chunkFiles.map { file ->
+                val media = mediaByFileName[file.name] ?: group.first { it.name == file.name }
+                val meta = ExifManager.readMp4Meta(file)
+                val creation = meta?.creationEpochMillis
+                    ?: media.matchedMemory?.parseEpochMillis()
+                    ?: 0L
+                val duration = meta?.durationSeconds ?: 0f
+                ChunkCandidate(file, media, creation, duration)
+            }.sortedWith(compareBy({ it.creationEpoch }, { it.file.name }))
+
+            // Verify Snapchat multi-snap continuous recording criteria:
+            // 1. Initial chunks are in full ~10s recording buffers (8.5s..12.5s)
+            // 2. Final chunk is up to 12.5s (> 0.5s)
+            val initialChunksValid = candidates.dropLast(1).all { it.durationSeconds in 8.5f..12.5f }
+            val lastChunkValid = candidates.last().durationSeconds in 0.5f..12.5f
+            val isTrueMultiSnap = candidates.size > 1 && initialChunksValid && lastChunkValid
+
+            var mergedSuccessfully = false
+
+            if (isTrueMultiSnap) {
+                val orderedFiles = candidates.map { it.file }
+                val merged = VideoChunkMerger.fastRemuxChunks(orderedFiles, primaryDestFile)
                 if (merged) {
+                    mergedSuccessfully = true
+
+                    // Look for overlay on primary or any of the candidate chunks
+                    var overlayToApply: File? = null
+                    val primaryBaseKey = MediaScanner.extractCanonicalBaseKey(primaryName)
+                    val primaryOverlay = File(overlayCacheDir, "$primaryBaseKey.png")
+                    if (primaryOverlay.exists()) {
+                        overlayToApply = primaryOverlay
+                    } else {
+                        for (c in candidates) {
+                            val cKey = MediaScanner.extractCanonicalBaseKey(c.file.name)
+                            val cOverlay = File(overlayCacheDir, "$cKey.png")
+                            if (cOverlay.exists()) {
+                                overlayToApply = cOverlay
+                                break
+                            }
+                        }
+                    }
+
+                    if (overlayToApply != null && overlayToApply.exists()) {
+                        if (burnVideoOverlays) {
+                            val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                context = context,
+                                videoFile = primaryDestFile,
+                                overlayFile = overlayToApply
+                            )
+                            if (vMerged) {
+                                overlaysMerged++
+                            } else {
+                                val destOverlay = File(outputDir, "$primaryBaseKey-overlay.png")
+                                overlayToApply.copyTo(destOverlay, overwrite = true)
+                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                            }
+                        } else {
+                            val destOverlay = File(outputDir, "$primaryBaseKey-overlay.png")
+                            overlayToApply.copyTo(destOverlay, overwrite = true)
+                            MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                        }
+                    }
+
                     val primaryMedia = mediaByFileName[primaryName]
                     val epochMillis = primaryMedia?.matchedMemory?.parseEpochMillis()
-                        ?: primaryMedia?.mp4Meta?.creationEpochMillis
-                        ?: 0L
+                        ?: candidates.first().creationEpoch
                     ExifManager.applyMetadataToVideo(context, Uri.fromFile(primaryDestFile), epochMillis)
                     MediaScannerConnection.scanFile(context, arrayOf(primaryDestFile.absolutePath), null, null)
+                    videosFixed++
+                }
+            }
+
+            if (!mergedSuccessfully) {
+                // Standalone fallback: preserve each chunk independently
+                for (chunk in candidates) {
+                    val destFile = File(outputDir, chunk.file.name)
+                    chunk.file.copyTo(destFile, overwrite = true)
+
+                    val cKey = MediaScanner.extractCanonicalBaseKey(chunk.file.name)
+                    val cOverlay = File(overlayCacheDir, "$cKey.png")
+                    if (cOverlay.exists()) {
+                        if (burnVideoOverlays) {
+                            val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                context = context,
+                                videoFile = destFile,
+                                overlayFile = cOverlay
+                            )
+                            if (vMerged) {
+                                overlaysMerged++
+                            } else {
+                                val destOverlay = File(outputDir, "$cKey-overlay.png")
+                                cOverlay.copyTo(destOverlay, overwrite = true)
+                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                            }
+                        } else {
+                            val destOverlay = File(outputDir, "$cKey-overlay.png")
+                            cOverlay.copyTo(destOverlay, overwrite = true)
+                            MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                        }
+                    }
+
+                    val epoch = chunk.media.matchedMemory?.parseEpochMillis() ?: chunk.creationEpoch
+                    ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epoch)
+                    MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
                     videosFixed++
                 }
             }
@@ -557,5 +679,12 @@ class ExportProcessWorker(
             manager.createNotificationChannel(channel)
         }
     }
+
+    private data class ChunkCandidate(
+        val file: File,
+        val media: ScannedMedia,
+        val creationEpoch: Long,
+        val durationSeconds: Float
+    )
 }
 

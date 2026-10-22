@@ -46,6 +46,7 @@ object VideoChunkMerger {
         burnOverlays: Boolean = false
     ): Boolean = withContext(Dispatchers.IO) {
         if (chunks.size < 2) return@withContext false
+        val sortedChunks = chunks.sortedBy { it.epochMillis }
 
         val cacheDir = context.cacheDir
         val tempInputFiles = mutableListOf<File>()
@@ -53,8 +54,8 @@ object VideoChunkMerger {
         val decodedBitmaps = mutableListOf<android.graphics.Bitmap>()
 
         try {
-            // Copy chunk inputs to temp cache files
-            for ((idx, chunk) in chunks.withIndex()) {
+            // Copy chunk inputs to temp cache files in chronological order
+            for ((idx, chunk) in sortedChunks.withIndex()) {
                 val tempIn = File(cacheDir, "chunk_in_${idx}_${System.currentTimeMillis()}.mp4")
                 tempInputFiles.add(tempIn)
 
@@ -131,7 +132,7 @@ object VideoChunkMerger {
             }
 
             if (success && tempOutputFile.exists() && tempOutputFile.length() > 0) {
-                val targetUri = chunks.first().uri
+                val targetUri = sortedChunks.first().uri
 
                 // 1. Write merged file back into primary chunk URI
                 context.contentResolver.openOutputStream(targetUri, "wt")?.use { outStream ->
@@ -146,15 +147,15 @@ object VideoChunkMerger {
                 } catch (e: Exception) { }
 
                 // 2. Delete subsequent chunk files
-                for (i in 1 until chunks.size) {
-                    deleteFileSilently(context, chunks[i].uri)
-                    if (chunks[i].overlayUri != null) {
-                        deleteFileSilently(context, chunks[i].overlayUri!!)
+                for (i in 1 until sortedChunks.size) {
+                    deleteFileSilently(context, sortedChunks[i].uri)
+                    if (sortedChunks[i].overlayUri != null) {
+                        deleteFileSilently(context, sortedChunks[i].overlayUri!!)
                     }
                 }
 
-                if (burnOverlays && chunks[0].overlayUri != null) {
-                    deleteFileSilently(context, chunks[0].overlayUri!!)
+                if (burnOverlays && sortedChunks[0].overlayUri != null) {
+                    deleteFileSilently(context, sortedChunks[0].overlayUri!!)
                 }
 
                 true
