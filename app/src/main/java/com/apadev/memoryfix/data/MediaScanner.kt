@@ -561,14 +561,18 @@ object MediaScanner {
         for ((_, videosAtTimestamp) in videosByTimestamp) {
             if (videosAtTimestamp.size < 2) continue
 
-            // If mp4Meta is known for all items (e.g. folder mode), verify duration criteria & no duplicates
-            val allHaveMeta = videosAtTimestamp.all { it.mp4Meta != null }
-            if (allHaveMeta) {
+            // If real mp4Meta is known for all items (e.g. folder mode where mp4Meta duration is real, not 10f placeholder from zip)
+            val isZipSource = videosAtTimestamp.any { it.zipUri != null }
+            val allHaveRealMeta = !isZipSource && videosAtTimestamp.all { it.mp4Meta != null && it.mp4Meta!!.durationSeconds > 0f }
+            if (allHaveRealMeta) {
                 var hasDuplicates = false
                 for (i in 0 until videosAtTimestamp.size) {
                     for (j in i + 1 until videosAtTimestamp.size) {
-                        val durDiff = Math.abs(videosAtTimestamp[i].mp4Meta!!.durationSeconds - videosAtTimestamp[j].mp4Meta!!.durationSeconds)
-                        if (durDiff < 0.08f) {
+                        val v1 = videosAtTimestamp[i]
+                        val v2 = videosAtTimestamp[j]
+                        val sizeDiff = Math.abs(v1.size - v2.size)
+                        val durDiff = Math.abs(v1.mp4Meta!!.durationSeconds - v2.mp4Meta!!.durationSeconds)
+                        if (sizeDiff < 500L && durDiff < 0.08f) {
                             hasDuplicates = true
                             break
                         }
@@ -585,7 +589,9 @@ object MediaScanner {
                     }
                 }
             } else {
-                // In zip scan without extracted files yet, sort by name and add as candidate
+                // In zip scan without extracted files yet, sort by name and add as candidate group.
+                // Step 3 in ExportProcessWorker will extract them to chunkCacheDir, inspect exact MP4 durations
+                // & exact file sizes, and verify continuous buffer criteria vs duplicates.
                 val sorted = videosAtTimestamp.sortedBy { it.name }
                 groups.add(sorted)
             }
