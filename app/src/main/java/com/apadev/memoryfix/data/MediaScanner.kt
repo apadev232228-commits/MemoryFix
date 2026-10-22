@@ -293,7 +293,8 @@ object MediaScanner {
                 fileLastModified = fileLastModified,
                 timeZoneId = detectedTimezone
             )
-            if (matched != null) matchedCount++
+            val isDup = duplicateDocNames.contains(name)
+            if (matched != null && !isDup) matchedCount++
 
             mediaList.add(
                 ScannedMedia(
@@ -519,9 +520,9 @@ object MediaScanner {
                 fileLastModified = entry.epochMillis,
                 timeZoneId = targetTimeZone
             )
-            if (matched != null) matchedCount++
-
             val isDup = duplicateNames.contains(entry.baseName)
+            if (matched != null && !isDup) matchedCount++
+
             val media = ScannedMedia(
                 uri = entry.zipUri,
                 name = entry.baseName,

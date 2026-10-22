@@ -152,9 +152,10 @@ class AnalysisFragment : Fragment() {
     }
 
     private fun hasMismatch(s: ScanStats): Boolean {
+        val totalFoundWithDuplicates = s.totalMediaFiles + s.duplicateCount
         return !s.hasMetadataFile ||
-                s.totalMediaFiles != s.matchedCount ||
-                s.totalMetadataEntries > s.totalMediaFiles
+                s.totalMediaFiles > s.matchedCount ||
+                s.totalMetadataEntries > totalFoundWithDuplicates
     }
 
     private fun updateProgressUI(progress: ScanProgress) {
@@ -264,10 +265,10 @@ class AnalysisFragment : Fragment() {
             if (!s.hasMetadataFile) {
                 binding.tvMismatchTitle.text = "Export History Not Found"
                 binding.tvMismatchDesc.text = "Could not find a Snapchat history file in this archive. We will restore dates using original file creation timestamps."
-            } else if (s.totalMetadataEntries > s.totalMediaFiles) {
-                val missingCount = s.totalMetadataEntries - s.totalMediaFiles
+            } else if (s.totalMetadataEntries > (s.totalMediaFiles + s.duplicateCount)) {
+                val missingCount = s.totalMetadataEntries - (s.totalMediaFiles + s.duplicateCount)
                 binding.tvMismatchTitle.text = "Missing Memories ($missingCount files)"
-                binding.tvMismatchDesc.text = "Your export history lists ${numberFormat.format(s.totalMetadataEntries)} memories, but only ${numberFormat.format(s.totalMediaFiles)} files were found (${numberFormat.format(missingCount)} missing). If your export had multiple ZIP parts (e.g. zip-1 and zip-2), select all ZIP files together."
+                binding.tvMismatchDesc.text = "Your export history lists ${numberFormat.format(s.totalMetadataEntries)} memories, but only ${numberFormat.format(s.totalMediaFiles + s.duplicateCount)} files were found (${numberFormat.format(missingCount)} missing). If your export had multiple ZIP parts (e.g. zip-1 and zip-2), select all ZIP files together."
             } else if (s.matchedCount < s.totalMediaFiles) {
                 val unmatched = s.totalMediaFiles - s.matchedCount
                 binding.tvMismatchTitle.text = "Unmatched Media ($unmatched files)"
@@ -301,14 +302,15 @@ class AnalysisFragment : Fragment() {
         val message: String
         val positiveButtonText: String
 
+        val totalFoundWithDuplicates = stats.totalMediaFiles + stats.duplicateCount
         if (!stats.hasMetadataFile) {
             title = "Export History Not Found"
             message = "We couldn't find your Snapchat history metadata file.\n\nCapture dates will be restored using each file's original creation timestamp instead.\n\nWould you like to proceed?"
             positiveButtonText = "Fix Using Timestamps"
-        } else if (stats.totalMetadataEntries > stats.totalMediaFiles) {
-            val missingCount = stats.totalMetadataEntries - stats.totalMediaFiles
+        } else if (stats.totalMetadataEntries > totalFoundWithDuplicates) {
+            val missingCount = stats.totalMetadataEntries - totalFoundWithDuplicates
             title = "Missing Memories Detected"
-            message = "Your Snapchat history lists ${numberFormat.format(stats.totalMetadataEntries)} memories, but only ${numberFormat.format(stats.totalMediaFiles)} files were found (${numberFormat.format(missingCount)} missing).\n\nIf your export came in multiple ZIP files (e.g. zip-1 and zip-2), select all ZIP parts together.\n\nWould you like to fix the ${numberFormat.format(stats.totalMediaFiles)} available files now, or select other files?"
+            message = "Your Snapchat history lists ${numberFormat.format(stats.totalMetadataEntries)} memories, but only ${numberFormat.format(totalFoundWithDuplicates)} files were found (${numberFormat.format(missingCount)} missing).\n\nIf your export came in multiple ZIP files (e.g. zip-1 and zip-2), select all ZIP parts together.\n\nWould you like to fix the ${numberFormat.format(stats.totalMediaFiles)} available files now, or select other files?"
             positiveButtonText = "Fix Available (${numberFormat.format(stats.totalMediaFiles)})"
         } else if (stats.matchedCount < stats.totalMediaFiles) {
             val unmatched = stats.totalMediaFiles - stats.matchedCount
