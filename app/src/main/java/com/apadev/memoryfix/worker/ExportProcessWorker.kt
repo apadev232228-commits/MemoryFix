@@ -540,7 +540,7 @@ class ExportProcessWorker(
 
             val primaryDestFile = File(outputDir, primaryName)
 
-            val candidates = chunkFiles.map { file ->
+            val candidatesRaw = chunkFiles.map { file ->
                 val media = mediaByFileName[file.name] ?: group.first { it.name == file.name }
                 val meta = ExifManager.readMp4Meta(file)
                 val creation = meta?.creationEpochMillis
@@ -549,42 +549,50 @@ class ExportProcessWorker(
                 val duration = meta?.durationSeconds ?: 0f
                 ChunkCandidate(file, media, creation, duration)
             }.sortedWith(
-                compareByDescending<ChunkCandidate> { File(overlayCacheDir, "${MediaScanner.extractCanonicalBaseKey(it.file.name)}.png").exists() }
-                    .thenBy { it.creationEpoch }
+                compareBy<ChunkCandidate> { it.creationEpoch }
+                    .thenBy { if (it.durationSeconds in 7.5f..12.5f) 0 else 1 }
                     .thenBy { it.file.name }
             )
 
-            // Helper to detect duplicate video variations (same timestamp down to the second,
-            // duration match down to decimals < 0.05s, and byte size diff < 150KB / 3%)
-            fun isDuplicateCandidate(c1: ChunkCandidate, c2: ChunkCandidate): Boolean {
-                val durDiff = Math.abs(c1.durationSeconds - c2.durationSeconds)
-                if (durDiff >= 0.05f) return false
+            // Helper to detect if two candidates are duplicate variations of the exact same video:
+            // 1. Identical file length (< 500B difference)
+            // 2. OR matching duration down to decimals (< 0.05s diff) AND either:
+            //    a) Both are standalone clips (not ~10s recording buffers, e.g. dur < 7.5s)
+            //    b) Or recorded within 1.5 seconds of each other (duplicate exports of the same chunk)
+            fun isDuplicateOf(c1: ChunkCandidate, c2: ChunkCandidate): Boolean {
                 val sizeDiff = Math.abs(c1.file.length() - c2.file.length())
                 if (sizeDiff < 500L) return true
-                val maxLen = Math.max(c1.file.length(), c2.file.length())
-                val sizeDiffPct = if (maxLen > 0L) sizeDiff.toFloat() / maxLen else 0f
-                return sizeDiff < 150_000L && sizeDiffPct < 0.03f
+                val durDiff = Math.abs(c1.durationSeconds - c2.durationSeconds)
+                if (durDiff >= 0.05f) return false
+                val timeDiff = Math.abs(c1.creationEpoch - c2.creationEpoch)
+                val isStandalone = c1.durationSeconds < 7.5f && c2.durationSeconds < 7.5f
+                return isStandalone || timeDiff <= 1500L
             }
 
-            // 1. Detect duplicates: identical file sizes (< 500B diff) or filtered variations (< 0.05s dur diff, < 3% size diff)
-            var hasDuplicates = false
-            for (i in 0 until candidates.size) {
-                for (j in i + 1 until candidates.size) {
-                    if (isDuplicateCandidate(candidates[i], candidates[j])) {
-                        hasDuplicates = true
-                        break
+            // Deduplicate candidates if skipDuplicates is true (keeping the higher-quality / largest file)
+            val candidates = if (skipDuplicates) {
+                val unique = mutableListOf<ChunkCandidate>()
+                val sortedByQuality = candidatesRaw.sortedByDescending { it.file.length() }
+                for (cand in sortedByQuality) {
+                    if (unique.none { isDuplicateOf(it, cand) }) {
+                        unique.add(cand)
                     }
                 }
-                if (hasDuplicates) break
+                unique.sortedWith(
+                    compareBy<ChunkCandidate> { it.creationEpoch }
+                        .thenBy { if (it.durationSeconds in 7.5f..12.5f) 0 else 1 }
+                        .thenBy { it.file.name }
+                )
+            } else {
+                candidatesRaw
             }
 
             // Verify Snapchat multi-snap continuous recording criteria:
-            // 1. Must NOT contain duplicates
-            // 2. Initial chunks are in full ~10s recording buffers (8.5s..12.5s)
-            // 3. Final chunk is up to 12.5s (> 0.5s)
-            val initialChunksValid = candidates.dropLast(1).all { it.durationSeconds in 8.5f..12.5f }
+            // 1. Initial chunks are in full ~10s recording buffers (7.5s..12.5s)
+            // 2. Final chunk is up to 12.5s (> 0.5s)
+            val initialChunksValid = candidates.dropLast(1).all { it.durationSeconds in 7.5f..12.5f }
             val lastChunkValid = candidates.last().durationSeconds in 0.5f..12.5f
-            val isTrueMultiSnap = !hasDuplicates && candidates.size > 1 && initialChunksValid && lastChunkValid
+            val isTrueMultiSnap = candidates.size > 1 && initialChunksValid && lastChunkValid
 
             var mergedSuccessfully = false
 
@@ -646,19 +654,8 @@ class ExportProcessWorker(
             }
 
             if (!mergedSuccessfully) {
-                // If skipDuplicates is enabled and group has duplicates, keep only 1 clean copy
-                val filesToSave = if (skipDuplicates && hasDuplicates) {
-                    val unique = mutableListOf<ChunkCandidate>()
-                    for (cand in candidates) {
-                        val isDup = unique.any { prev -> isDuplicateCandidate(prev, cand) }
-                        if (!isDup) {
-                            unique.add(cand)
-                        }
-                    }
-                    unique
-                } else {
-                    candidates
-                }
+                // Standalone fallback: preserve each unique candidate independently
+                val filesToSave = candidates
 
                 // Standalone fallback: preserve each chunk independently
                 for (chunk in filesToSave) {

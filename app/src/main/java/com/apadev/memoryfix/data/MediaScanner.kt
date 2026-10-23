@@ -621,30 +621,35 @@ object MediaScanner {
             val isZipSource = videosAtTimestamp.any { it.zipUri != null }
             val allHaveRealMeta = !isZipSource && videosAtTimestamp.all { it.mp4Meta != null && it.mp4Meta!!.durationSeconds > 0f }
             if (allHaveRealMeta) {
-                var hasDuplicates = false
-                for (i in 0 until videosAtTimestamp.size) {
-                    for (j in i + 1 until videosAtTimestamp.size) {
-                        val v1 = videosAtTimestamp[i]
-                        val v2 = videosAtTimestamp[j]
-                        val sizeDiff = Math.abs(v1.size - v2.size)
-                        val durDiff = Math.abs(v1.mp4Meta!!.durationSeconds - v2.mp4Meta!!.durationSeconds)
-                        val maxLen = Math.max(v1.size, v2.size)
-                        val sizeDiffPct = if (maxLen > 0L) sizeDiff.toFloat() / maxLen else 0f
-                        if (durDiff < 0.05f && (sizeDiff < 500L || (sizeDiff < 150_000L && sizeDiffPct < 0.03f))) {
-                            hasDuplicates = true
-                            break
-                        }
-                    }
-                    if (hasDuplicates) break
+                fun isDuplicateVideo(v1: ScannedMedia, v2: ScannedMedia): Boolean {
+                    val sizeDiff = Math.abs(v1.size - v2.size)
+                    if (sizeDiff < 500L) return true
+                    val dur1 = v1.mp4Meta?.durationSeconds ?: 0f
+                    val dur2 = v2.mp4Meta?.durationSeconds ?: 0f
+                    val durDiff = Math.abs(dur1 - dur2)
+                    if (durDiff >= 0.05f) return false
+                    val t1 = v1.mp4Meta?.creationEpochMillis ?: 0L
+                    val t2 = v2.mp4Meta?.creationEpochMillis ?: 0L
+                    val isStandalone = dur1 < 7.5f && dur2 < 7.5f
+                    return isStandalone || Math.abs(t1 - t2) <= 1500L
                 }
 
-                if (!hasDuplicates) {
-                    val sorted = videosAtTimestamp.sortedBy { it.mp4Meta!!.creationEpochMillis }
-                    val initialValid = sorted.dropLast(1).all { it.mp4Meta!!.durationSeconds in 8.5f..12.5f }
-                    val lastValid = sorted.last().mp4Meta!!.durationSeconds in 0.5f..12.5f
-                    if (initialValid && lastValid) {
-                        groups.add(sorted)
+                val unique = mutableListOf<ScannedMedia>()
+                for (v in videosAtTimestamp.sortedByDescending { it.size }) {
+                    if (unique.none { isDuplicateVideo(it, v) }) {
+                        unique.add(v)
                     }
+                }
+
+                val sorted = unique.sortedWith(
+                    compareBy<ScannedMedia> { it.mp4Meta?.creationEpochMillis ?: 0L }
+                        .thenBy { if ((it.mp4Meta?.durationSeconds ?: 0f) in 7.5f..12.5f) 0 else 1 }
+                        .thenBy { it.name }
+                )
+                val initialValid = sorted.dropLast(1).all { (it.mp4Meta?.durationSeconds ?: 0f) in 7.5f..12.5f }
+                val lastValid = (sorted.lastOrNull()?.mp4Meta?.durationSeconds ?: 0f) in 0.5f..12.5f
+                if (sorted.size > 1 && initialValid && lastValid) {
+                    groups.add(sorted)
                 }
             } else {
                 // In zip scan without extracted files yet, sort by name and add as candidate group.
