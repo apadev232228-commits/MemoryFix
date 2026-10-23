@@ -598,7 +598,21 @@ class ExportProcessWorker(
                                                 videoFile = destFile,
                                                 overlayFile = overlayFile
                                             )
-                                            if (vMerged) overlaysMerged++
+                                            if (vMerged) {
+                                                overlaysMerged++
+                                                val memory = matchingMedia.matchedMemory
+                                                val epochMillis = memory?.parseEpochMillis()
+                                                    ?: matchingMedia.mp4Meta?.creationEpochMillis
+                                                    ?: DateExtractor.extractEpochMillisFromFileName(matchingMedia.name, timeZone)
+                                                    ?: 0L
+                                                val coordinates = if (embedLocation) memory?.parseCoordinates() else null
+                                                ExifManager.applyMetadataToVideo(
+                                                    context = context,
+                                                    uri = Uri.fromFile(destFile),
+                                                    epochMillis = epochMillis,
+                                                    coordinates = coordinates
+                                                )
+                                            }
                                         }
                                     }
                                 }
