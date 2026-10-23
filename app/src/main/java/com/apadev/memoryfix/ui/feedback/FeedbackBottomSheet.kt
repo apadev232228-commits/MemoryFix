@@ -1,6 +1,7 @@
 package com.apadev.memoryfix.ui.feedback
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -107,6 +108,10 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
                 "MemoryFix is an independent utility and is not affiliated with, sponsored by, or endorsed by Snap Inc. (Snapchat) or Google LLC (Google Photos). 'Snapchat' is a registered trademark of Snap Inc. 'Google Photos' is a registered trademark of Google LLC."
             )
             .setPositiveButton("Got It", null)
+            .setNeutralButton("View Online") { _, _ ->
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://apadev232228-commits.github.io/MemoryFix/privacy.html"))
+                try { startActivity(intent) } catch (e: Exception) { e.printStackTrace() }
+            }
             .show()
     }
 
