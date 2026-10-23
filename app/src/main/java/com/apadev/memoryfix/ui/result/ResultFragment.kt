@@ -153,14 +153,8 @@ class ResultFragment : Fragment() {
         }
 
         // Saved Media Location
-        val isZip = com.apadev.memoryfix.data.MediaScanner.lastScanResult?.isZipSource ?: true
-        if (isZip) {
-            binding.tvSavedLocationPath.text = "📁 Internal Storage > Pictures > Snapchat Memories"
-            binding.tvSavedLocationDesc.text = "All fixed photos and videos are saved in the 'Snapchat Memories' folder and indexed to appear in chronological order in your gallery."
-        } else {
-            binding.tvSavedLocationPath.text = "📁 Selected device folder (Updated in-place)"
-            binding.tvSavedLocationDesc.text = "Your original memories were updated in-place inside your selected folder — no duplicates created."
-        }
+        binding.tvSavedLocationPath.text = "📁 Internal Storage > Pictures > Snapchat Memories"
+        binding.tvSavedLocationDesc.text = "All fixed photos and videos are saved in the 'Snapchat Memories' folder and indexed to appear in chronological order in your gallery."
 
         binding.btnOpenGallery.setOnClickListener {
             try {
