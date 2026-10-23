@@ -211,19 +211,6 @@
                     app:iconPadding="8dp"
                     app:iconTint="@color/on_primary" />
 
-                <!-- Secondary Option: Or select unzipped folder -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnChooseFolder"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/btn_select_extracted_folder"
-                    android:textColor="@color/primary"
-                    android:textSize="13sp"
-                    app:icon="@drawable/ic_folder_open"
-                    app:iconTint="@color/primary" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -253,44 +240,26 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Quick Info Trigger Chips -->
-        <LinearLayout
+        <!-- Features Action Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFeatures"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="50dp"
             android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnChipSteps"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="42dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                android:backgroundTint="@color/chip_bg"
-                android:text="❓ How It Works"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                app:cornerRadius="21dp"
-                app:strokeColor="@color/surface_border"
-                app:strokeWidth="1dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnChipWhy"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="42dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:backgroundTint="@color/chip_bg"
-                android:text="ℹ️ Why MemoryFix"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                app:cornerRadius="21dp"
-                app:strokeColor="@color/surface_border"
-                app:strokeWidth="1dp" />
-        </LinearLayout>
+            android:backgroundTint="@color/chip_bg"
+            android:text="Explore All Features"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:cornerRadius="25dp"
+            app:icon="@drawable/ic_auto_fix"
+            app:iconGravity="textStart"
+            app:iconPadding="10dp"
+            app:iconSize="20dp"
+            app:iconTint="@color/primary"
+            app:strokeColor="@color/surface_border"
+            app:strokeWidth="1dp" />
 
         <View
             android:layout_width="match_parent"

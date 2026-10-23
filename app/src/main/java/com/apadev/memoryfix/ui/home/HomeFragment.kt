@@ -83,22 +83,6 @@ class HomeFragment : Fragment() {
         selectZipLauncher.launch(zipMimeTypes)
     }
 
-    private val selectFolderLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                requireContext().contentResolver.takePersistableUriPermission(uri, flags)
-            } catch (e: Exception) {
-                // Ignore permission error if already granted or restricted
-            }
-            (activity as? MainActivity)?.navigateToAnalysis(uri)
-        } else {
-            Toast.makeText(requireContext(), "No folder selected", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -119,15 +103,11 @@ class HomeFragment : Fragment() {
             openZipPicker()
         }
 
-        binding.btnChooseFolder.setOnClickListener {
-            selectFolderLauncher.launch(null)
+        binding.btnFeatures.setOnClickListener {
+            showFeaturesBottomSheet()
         }
 
         binding.btnHelp.setOnClickListener {
-            showHowItWorksBottomSheet()
-        }
-
-        binding.btnChipSteps.setOnClickListener {
             showHowItWorksBottomSheet()
         }
 
@@ -135,14 +115,20 @@ class HomeFragment : Fragment() {
             showWhyMemoryFixBottomSheet()
         }
 
-        binding.btnChipWhy.setOnClickListener {
-            showWhyMemoryFixBottomSheet()
-        }
-
         binding.btnPro.setOnClickListener {
             val app = requireActivity().application as? MemoryFixApp
             app?.billingManager?.launchBillingFlow(requireActivity())
         }
+    }
+
+    private fun showFeaturesBottomSheet() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_features, null)
+        sheetView.findViewById<View>(R.id.btnDismissFeatures).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.setContentView(sheetView)
+        dialog.show()
     }
 
     private fun showHowItWorksBottomSheet() {

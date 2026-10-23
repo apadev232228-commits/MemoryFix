@@ -14,6 +14,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.apadev.memoryfix.MainActivity
+import com.apadev.memoryfix.MemoryFixApp
+import com.apadev.memoryfix.ads.AdManager
 import com.apadev.memoryfix.data.FullScanResult
 import com.apadev.memoryfix.data.MediaScanner
 import com.apadev.memoryfix.data.ScanProgress
@@ -84,6 +86,8 @@ class AnalysisFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
+
+        AdManager.loadInterstitial(requireContext())
 
         binding.layoutScanningPhase.visibility = View.VISIBLE
         binding.layoutReadyPhase.visibility = View.GONE
@@ -279,16 +283,9 @@ class AnalysisFragment : Fragment() {
         }
 
         if (s.totalMediaFiles > 0) {
-            val timeEst = if (s.estimatedTimeSeconds >= 60) {
-                val mins = s.estimatedTimeSeconds / 60
-                val secs = s.estimatedTimeSeconds % 60
-                if (secs > 0) "${mins}m ${secs}s" else "${mins} min"
-            } else {
-                "${s.estimatedTimeSeconds}s"
-            }
             binding.btnStartProcessing.isEnabled = true
             binding.btnStartProcessing.alpha = 1.0f
-            binding.btnStartProcessing.text = "Start Restoring Memories (~$timeEst)"
+            binding.btnStartProcessing.text = "Fix My Memories"
         } else {
             binding.btnStartProcessing.isEnabled = false
             binding.btnStartProcessing.alpha = 0.5f
@@ -393,13 +390,16 @@ class AnalysisFragment : Fragment() {
             .setInputData(inputDataBuilder.build())
             .build()
 
-        WorkManager.getInstance(requireContext()).enqueueUniqueWork(
-            "MemoryFixExport",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
+        val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
+        AdManager.showInterstitial(requireActivity(), isPro) {
+            WorkManager.getInstance(requireContext()).enqueueUniqueWork(
+                "MemoryFixExport",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
 
-        (activity as? MainActivity)?.navigateToProcessing()
+            (activity as? MainActivity)?.navigateToProcessing()
+        }
     }
 
     override fun onDestroyView() {

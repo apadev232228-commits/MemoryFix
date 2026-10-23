@@ -701,7 +701,7 @@
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_gradient_btn"
-                android:text="Start Restoring Memories"
+                android:text="Fix My Memories"
                 android:textColor="@color/on_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
