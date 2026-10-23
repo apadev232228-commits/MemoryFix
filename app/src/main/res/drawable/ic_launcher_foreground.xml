@@ -4,10 +4,73 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:translateX="24" android:translateY="24">
-        <!-- Camera / Photo Icon with Clock rewind -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M30,12l-3.5,-4h-13l-3.5,4h-6c-2.2,0 -4,1.8 -4,4v24c0,2.2 1.8,4 4,4h40c2.2,0 4,-1.8 4,-4v-24c0,-2.2 -1.8,-4 -4,-4h-6zM30,30c0,5.5 -4.5,10 -10,10s-10,-4.5 -10,-10s4.5,-10 10,-10s10,4.5 10,10zM20,24h-2v7l5,3l1,-1.6l-4,-2.4v-6z" />
-    </group>
+
+    <!-- Camera Body Silhouette -->
+    <path
+        android:fillColor="#242A38"
+        android:strokeColor="#3E475C"
+        android:strokeWidth="1.5"
+        android:pathData="M27,38 C27,33.5 30.5,30 35,30 L43,30 L47,25 C48,23.8 49.5,23 51,23 L57,23 C58.5,23 60,23.8 61,25 L65,30 L73,30 C77.5,30 81,33.5 81,38 L81,72 C81,76.5 77.5,80 73,80 L35,80 C30.5,80 27,76.5 27,72 Z" />
+
+    <!-- Top Shutter Button -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M33,26 L41,26 C41.5,26 42,26.5 42,27 L42,30 L32,30 L32,27 C32,26.5 32.5,26 33,26 Z" />
+
+    <!-- Camera Lens Outer Bezel -->
+    <path
+        android:fillColor="#151922"
+        android:strokeColor="#7C4DFF"
+        android:strokeWidth="2.5"
+        android:pathData="M54,34 A20,20 0 1,1 53.9,34 Z" />
+
+    <!-- Clock Face -->
+    <path
+        android:fillColor="#EEF2F8"
+        android:pathData="M54,37 A17,17 0 1,1 53.9,37 Z" />
+
+    <!-- Clock Hour Ticks -->
+    <path
+        android:fillColor="#7B879E"
+        android:pathData="M53,40 h2 v3 h-2 z
+                         M53,65 h2 v3 h-2 z
+                         M40,53 h3 v2 h-3 z
+                         M65,53 h3 v2 h-3 z" />
+
+    <!-- Clock Hands (Pointing to 9:00) -->
+    <path
+        android:fillColor="#171C28"
+        android:strokeColor="#171C28"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,43 M54,54 L44,54" />
+
+    <!-- Clock Center Pivot -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M54,52 A2,2 0 1,1 53.9,52 Z" />
+
+    <!-- Time Rewind Arrow encircling the bottom of lens -->
+    <path
+        android:strokeColor="#7C4DFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M69,64 C65.5,70 59,73.5 52,73.5 C43,73.5 35.5,67 34,58" />
+
+    <!-- Rewind Arrowhead -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M36,54 L29,59 L35,66 Z" />
+
+    <!-- Golden Magic Restoration Sparkle (Primary Star) -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M76,21 Q76,28 83,28 Q76,28 76,35 Q76,28 69,28 Q76,28 76,21 Z" />
+
+    <!-- Secondary Mini Sparkle -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M83,34 Q83,37 86,37 Q83,37 83,40 Q83,37 80,37 Q83,37 83,34 Z" />
+
 </vector>

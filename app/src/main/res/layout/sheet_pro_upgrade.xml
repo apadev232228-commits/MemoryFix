@@ -12,9 +12,26 @@
         android:layout_width="40dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_live_dot"
         android:backgroundTint="@color/surface_border" />
+
+    <!-- App Logo Icon -->
+    <FrameLayout
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="14dp"
+        android:background="@drawable/bg_icon_squircle"
+        android:padding="3dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_app_logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.App.Squircle" />
+    </FrameLayout>
 
     <!-- Gold Pro Pill Badge -->
     <LinearLayout

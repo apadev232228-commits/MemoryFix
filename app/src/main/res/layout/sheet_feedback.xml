@@ -16,6 +16,23 @@
         android:background="@drawable/bg_live_dot"
         android:backgroundTint="@color/surface_border" />
 
+    <!-- App Logo Icon -->
+    <FrameLayout
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_icon_squircle"
+        android:padding="3dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_app_logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.App.Squircle" />
+    </FrameLayout>
+
     <!-- Title & Tagline -->
     <TextView
         android:id="@+id/tvFeedbackTitle"
