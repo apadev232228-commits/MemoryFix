@@ -118,28 +118,32 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
 
             if (includeLogs) {
                 try {
-                    val logFile = AppLogger.getLogFile(requireContext())
-                    if (logFile.exists() && logFile.length() > 0) {
+                    val zipLogFile = AppLogger.getExportableLogZip(requireContext())
+                    if (zipLogFile.exists() && zipLogFile.length() > 0) {
                         val fileUri = FileProvider.getUriForFile(
                             requireContext(),
                             "${requireContext().packageName}.fileprovider",
-                            logFile
+                            zipLogFile
                         )
                         putExtra(Intent.EXTRA_STREAM, fileUri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
                 } catch (e: Exception) {
-                    AppLogger.e("FeedbackBottomSheet", "Failed to attach log file: ${e.message}", e)
+                    AppLogger.e("FeedbackBottomSheet", "Failed to attach log zip: ${e.message}", e)
                 }
             }
         }
 
         try {
             startActivity(Intent.createChooser(intent, "Send feedback via..."))
-            Toast.makeText(requireContext(), "Opening email...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Opening email client...", Toast.LENGTH_SHORT).show()
             dismiss()
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "No email app found. Please email $SUPPORT_EMAIL", Toast.LENGTH_LONG).show()
+            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("MemoryFix Diagnostic Report", bodyBuilder.toString())
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "No email app found. Diagnostic summary copied to clipboard.", Toast.LENGTH_LONG).show()
+            dismiss()
         }
     }
 

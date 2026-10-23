@@ -195,7 +195,7 @@
         android:layout_height="54dp"
         android:layout_marginTop="20dp"
         android:background="@drawable/bg_gradient_btn"
-        android:text="Send to apadev232228@gmail.com"
+        android:text="Send Feedback Report"
         android:textColor="@color/on_primary"
         android:textSize="15sp"
         android:textStyle="bold"

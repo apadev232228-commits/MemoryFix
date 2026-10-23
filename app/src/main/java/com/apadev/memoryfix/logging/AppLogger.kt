@@ -7,18 +7,22 @@ import android.os.StatFs
 import android.util.Log
 import com.apadev.memoryfix.BuildConfig
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 object AppLogger {
 
     private const val LOG_DIR_NAME = "logs"
     private const val LOG_FILE_NAME = "diagnostics.log"
-    private const val MAX_LOG_SIZE_BYTES = 256 * 1024L // 256 KB max
+    private const val LOG_BACKUP_NAME = "diagnostics.log.1"
+    private const val MAX_LOG_SIZE_BYTES = 256 * 1024L // 256 KB per log file
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val lock = Any()
@@ -64,7 +68,7 @@ object AppLogger {
             try {
                 val file = getLogFile(ctx)
                 if (file.length() > MAX_LOG_SIZE_BYTES) {
-                    pruneLogFile(file)
+                    rotateLogFile(file, ctx)
                 }
 
                 val timestamp = dateFormat.format(Date())
@@ -94,13 +98,17 @@ object AppLogger {
         }
     }
 
-    private fun pruneLogFile(file: File) {
+    private fun rotateLogFile(currentFile: File, context: Context) {
         try {
-            val lines = file.readLines(Charsets.UTF_8)
-            val keepLines = lines.takeLast(lines.size / 2)
-            file.writeText(keepLines.joinToString("\n") + "\n", Charsets.UTF_8)
+            val backupFile = File(currentFile.parentFile, LOG_BACKUP_NAME)
+            if (backupFile.exists()) {
+                backupFile.delete()
+            }
+            currentFile.renameTo(backupFile)
+            writeHeader(context, currentFile)
         } catch (e: Exception) {
-            file.delete()
+            currentFile.delete()
+            writeHeader(context, currentFile)
         }
     }
 
@@ -123,19 +131,58 @@ object AppLogger {
             if (!file.exists()) return "No logs recorded yet."
             try {
                 val lines = file.readLines(Charsets.UTF_8)
-                lines.takeLast(maxLines).joinToString("\n")
+                val recent = lines.takeLast(maxLines).joinToString("\n")
+                if (lines.size > maxLines) {
+                    "$recent\n\n--- [Showing latest $maxLines entries. Complete log is compressed & attached] ---"
+                } else {
+                    recent
+                }
             } catch (e: Exception) {
                 "Unable to read log file: ${e.message}"
             }
         }
     }
 
+    /**
+     * Compresses the active and rotated log files into a lightweight diagnostics.zip (~15-30 KB).
+     * This prevents email attachment size limits and saves user bandwidth.
+     */
+    fun getExportableLogZip(context: Context): File {
+        return synchronized(lock) {
+            val cacheDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val zipFile = File(cacheDir, "diagnostics.zip")
+            if (zipFile.exists()) zipFile.delete()
+
+            val filesToZip = mutableListOf<File>()
+            val activeLog = getLogFile(context)
+            if (activeLog.exists() && activeLog.length() > 0) filesToZip.add(activeLog)
+            val backupLog = File(activeLog.parentFile, LOG_BACKUP_NAME)
+            if (backupLog.exists() && backupLog.length() > 0) filesToZip.add(backupLog)
+
+            try {
+                ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
+                    for (f in filesToZip) {
+                        val entry = ZipEntry(f.name)
+                        zos.putNextEntry(entry)
+                        FileInputStream(f).use { fis ->
+                            fis.copyTo(zos)
+                        }
+                        zos.closeEntry()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("AppLogger", "Failed to compress log files: ${e.message}")
+            }
+            zipFile
+        }
+    }
+
     fun clearLogs(context: Context) {
         synchronized(lock) {
             val file = getLogFile(context)
-            if (file.exists()) {
-                file.delete()
-            }
+            val backup = File(file.parentFile, LOG_BACKUP_NAME)
+            if (file.exists()) file.delete()
+            if (backup.exists()) backup.delete()
             writeHeader(context, file)
         }
     }
