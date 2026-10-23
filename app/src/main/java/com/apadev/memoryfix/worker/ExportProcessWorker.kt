@@ -440,6 +440,7 @@ class ExportProcessWorker(
         var overlaysMerged = 0
         var failedCount = 0
         val failureLogList = mutableListOf<String>()
+        val writtenFilePaths = mutableListOf<String>()
 
         // Extract media and overlays in a single stream pass
         for (zipUri in zipUris) {
@@ -514,7 +515,7 @@ class ExportProcessWorker(
                                         }
 
                                         ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epochMillis, coordinates)
-                                        MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
+                                        writtenFilePaths.add(destFile.absolutePath)
                                         videosFixed++
                                     }
                                 } else {
@@ -540,7 +541,7 @@ class ExportProcessWorker(
                                         coordinates = coordinates,
                                         timeZoneId = timeZone
                                     )
-                                    MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
+                                    writtenFilePaths.add(destFile.absolutePath)
                                     photosFixed++
                                 }
 
@@ -734,7 +735,7 @@ class ExportProcessWorker(
                     val epochMillis = primaryMedia?.matchedMemory?.parseEpochMillis()
                         ?: candidates.first().creationEpoch
                     ExifManager.applyMetadataToVideo(context, Uri.fromFile(primaryDestFile), epochMillis, chunkCoords)
-                    MediaScannerConnection.scanFile(context, arrayOf(primaryDestFile.absolutePath), null, null)
+                    writtenFilePaths.add(primaryDestFile.absolutePath)
                     videosFixed++
                 }
             }
@@ -764,7 +765,7 @@ class ExportProcessWorker(
                     val epoch = chunk.media.matchedMemory?.parseEpochMillis() ?: chunk.creationEpoch
                     val chunkCoords = if (embedLocation) chunk.media.matchedMemory?.parseCoordinates() else null
                     ExifManager.applyMetadataToVideo(context, Uri.fromFile(destFile), epoch, chunkCoords)
-                    MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), null, null)
+                    writtenFilePaths.add(destFile.absolutePath)
                     videosFixed++
                 }
             }
@@ -784,6 +785,22 @@ class ExportProcessWorker(
                 PROGRESS_OVERLAYS to overlaysMerged
             )
         )
+
+        // Batch scan all written files into the system media store to prevent IPC thread crash
+        if (writtenFilePaths.isNotEmpty()) {
+            writtenFilePaths.distinct().chunked(100).forEach { batch ->
+                try {
+                    MediaScannerConnection.scanFile(
+                        context.applicationContext,
+                        batch.toTypedArray(),
+                        null,
+                        null
+                    )
+                } catch (e: Throwable) {
+                    AppLogger.w(TAG, "Batch media scan warning: ${e.message}")
+                }
+            }
+        }
 
         val totalFixed = photosFixed + videosFixed
         val duplicatesCleaned = if (skipDuplicates) list.count { it.isDuplicate } else 0
