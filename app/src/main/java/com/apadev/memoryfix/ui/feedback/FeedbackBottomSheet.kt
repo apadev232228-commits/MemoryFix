@@ -53,6 +53,11 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
             binding.chipBug.isChecked = true
         }
 
+        binding.tvAppVersion.text = "MemoryFix v${com.apadev.memoryfix.BuildConfig.VERSION_NAME}"
+        binding.btnCheckUpdate.setOnClickListener {
+            (activity as? com.apadev.memoryfix.MainActivity)?.checkForAppUpdate(isUserInitiated = true)
+        }
+
         binding.btnCancelFeedback.setOnClickListener {
             dismiss()
         }

@@ -28,6 +28,11 @@ object AppLogger {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val lock = Any()
 
+    fun d(tag: String, message: String) {
+        Log.d(tag, message)
+        writeLogEntry("DEBUG", tag, message, null)
+    }
+
     fun i(tag: String, message: String) {
         Log.i(tag, message)
         writeLogEntry("INFO", tag, message, null)

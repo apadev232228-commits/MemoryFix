@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.google.ads)
     implementation(libs.billing.ktx)
     implementation(libs.play.review)
+    implementation(libs.play.update)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.effect)

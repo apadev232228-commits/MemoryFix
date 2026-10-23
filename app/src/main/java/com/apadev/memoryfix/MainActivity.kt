@@ -11,17 +11,24 @@ import com.apadev.memoryfix.ui.analysis.AnalysisFragment
 import com.apadev.memoryfix.ui.home.HomeFragment
 import com.apadev.memoryfix.ui.processing.ProcessingFragment
 import com.apadev.memoryfix.ui.result.ResultFragment
+import com.apadev.memoryfix.update.AppUpdateHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var appUpdateHelper: AppUpdateHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Initialize Google Play In-App Updates and check in background
+        appUpdateHelper = AppUpdateHelper(this)
+        appUpdateHelper.register()
+        appUpdateHelper.checkForAppUpdate(isUserInitiated = false)
 
         if (savedInstanceState == null) {
             navigateToHome()
@@ -57,6 +64,23 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        appUpdateHelper.onResume()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        appUpdateHelper.unregister()
+    }
+
+    /**
+     * Public accessor to trigger update checks on demand (e.g. from Feedback / Settings)
+     */
+    fun checkForAppUpdate(isUserInitiated: Boolean = true) {
+        appUpdateHelper.checkForAppUpdate(isUserInitiated)
     }
 
     fun navigateToHome() {

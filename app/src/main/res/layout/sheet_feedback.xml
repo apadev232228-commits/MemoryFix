@@ -202,6 +202,44 @@
         app:backgroundTint="@null"
         app:cornerRadius="27dp" />
 
+    <!-- App Version & Update Check -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvAppVersion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MemoryFix v1.0.0"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            android:text="•"
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCheckUpdate"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="0dp"
+            android:text="Check for Updates"
+            android:textColor="@color/primary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
     <!-- Dismiss Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCancelFeedback"
@@ -209,7 +247,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="2dp"
         android:text="Cancel"
         android:textColor="@color/text_tertiary"
         android:textSize="13sp" />
