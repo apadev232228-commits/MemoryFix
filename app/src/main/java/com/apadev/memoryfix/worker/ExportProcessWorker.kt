@@ -382,8 +382,25 @@ class ExportProcessWorker(
         }
 
         val mediaByFileName = list.associateBy { it.name }
+        val mediaByBaseKey = list.associateBy { MediaScanner.extractCanonicalBaseKey(it.name) }
         val overlayCacheDir = File(context.cacheDir, "zip_overlays").apply { mkdirs() }
         val chunkCacheDir = File(context.cacheDir, "zip_chunks").apply { mkdirs() }
+
+        val totalChunkGroups = chunkGroupMap.size
+        val totalWorkUnits = total + totalChunkGroups + 1
+        var workProgress = 0
+
+        // Report total immediately so UI shows progress from the start
+        setProgress(
+            workDataOf(
+                PROGRESS_CURRENT to 0,
+                PROGRESS_TOTAL to totalWorkUnits,
+                PROGRESS_FILE to "Starting restoration...",
+                PROGRESS_PHOTOS to 0,
+                PROGRESS_VIDEOS to 0,
+                PROGRESS_OVERLAYS to 0
+            )
+        )
 
         var processed = 0
         var photosFixed = 0
@@ -391,38 +408,16 @@ class ExportProcessWorker(
         var overlaysMerged = 0
         var failedCount = 0
 
-        // Step 1: Pre-extract overlays to cacheDir (~1 second for 164 overlays)
+        // Extract media and overlays in a single stream pass
         for (zipUri in zipUris) {
             try {
                 context.contentResolver.openInputStream(zipUri)?.use { rawStream ->
                     ZipInputStream(BufferedInputStream(rawStream)).use { zis ->
                         var entry = zis.nextEntry
                         while (entry != null) {
-                            val name = entry.name
-                            if (name.contains("overlay", ignoreCase = true) && name.endsWith(".png", ignoreCase = true)) {
-                                val baseName = name.substringAfterLast('/')
-                                val baseKey = MediaScanner.extractCanonicalBaseKey(baseName)
-                                val overlayFile = File(overlayCacheDir, "$baseKey.png")
-                                FileOutputStream(overlayFile).use { fos -> zis.copyTo(fos) }
+                            if (isStopped) {
+                                return Result.failure()
                             }
-                            entry = zis.nextEntry
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        // Step 2: Extract & fix media in one sequential stream pass
-        val seenMediaSignatures = mutableSetOf<String>()
-
-        for (zipUri in zipUris) {
-            try {
-                context.contentResolver.openInputStream(zipUri)?.use { rawStream ->
-                    ZipInputStream(BufferedInputStream(rawStream)).use { zis ->
-                        var entry = zis.nextEntry
-                        while (entry != null) {
                             val name = entry.name
                             val baseName = name.substringAfterLast('/')
                             val mediaItem = mediaByFileName[baseName]
@@ -440,13 +435,27 @@ class ExportProcessWorker(
                                 // Skip duplicate photos or duplicate videos if skipDuplicates is true
                                 if (skipDuplicates && mediaItem.isDuplicate) {
                                     processed++
+                                    workProgress++
+                                    if (workProgress % 5 == 0 || workProgress == total) {
+                                        setProgress(
+                                            workDataOf(
+                                                PROGRESS_CURRENT to workProgress,
+                                                PROGRESS_TOTAL to totalWorkUnits,
+                                                PROGRESS_FILE to baseName,
+                                                PROGRESS_PHOTOS to photosFixed,
+                                                PROGRESS_VIDEOS to videosFixed,
+                                                PROGRESS_OVERLAYS to overlaysMerged
+                                            )
+                                        )
+                                    }
                                     entry = zis.nextEntry
                                     continue
                                 }
 
                                 processed++
+                                workProgress++
                                 if (processed % 5 == 0 || processed == total) {
-                                    val notif = createNotification(processed, total, "Fixing: $baseName")
+                                    val notif = createNotification(workProgress, totalWorkUnits, "Fixing: $baseName")
                                     notificationManager.notify(NOTIFICATION_ID, notif)
                                 }
 
@@ -514,14 +523,67 @@ class ExportProcessWorker(
 
                                 setProgress(
                                     workDataOf(
-                                        PROGRESS_CURRENT to processed,
-                                        PROGRESS_TOTAL to total,
+                                        PROGRESS_CURRENT to workProgress,
+                                        PROGRESS_TOTAL to totalWorkUnits,
                                         PROGRESS_FILE to baseName,
                                         PROGRESS_PHOTOS to photosFixed,
                                         PROGRESS_VIDEOS to videosFixed,
                                         PROGRESS_OVERLAYS to overlaysMerged
                                     )
                                 )
+                            } else if (name.contains("overlay", ignoreCase = true) && name.endsWith(".png", ignoreCase = true)) {
+                                val baseKey = MediaScanner.extractCanonicalBaseKey(baseName)
+                                val overlayFile = File(overlayCacheDir, "$baseKey.png")
+                                FileOutputStream(overlayFile).use { fos -> zis.copyTo(fos) }
+
+                                // If the matching media was already extracted before this overlay in the ZIP:
+                                val matchingMedia = mediaByBaseKey[baseKey]
+                                if (matchingMedia != null && !matchingMedia.isVideo) {
+                                    val destFile = File(outputDir, matchingMedia.name)
+                                    if (destFile.exists() && mergeOverlays) {
+                                        val merged = OverlayCompositor.compositeInPlace(
+                                            context = context,
+                                            baseUri = Uri.fromFile(destFile),
+                                            overlayUri = Uri.fromFile(overlayFile),
+                                            cleanupOverlayFile = false
+                                        )
+                                        if (merged) {
+                                            overlaysMerged++
+                                            val memory = matchingMedia.matchedMemory
+                                            val epochMillis = memory?.parseEpochMillis()
+                                                ?: matchingMedia.mp4Meta?.creationEpochMillis
+                                                ?: 0L
+                                            val coordinates = if (embedLocation) memory?.parseCoordinates() else null
+                                            ExifManager.applyMetadataToImage(
+                                                context = context,
+                                                uri = Uri.fromFile(destFile),
+                                                epochMillis = epochMillis,
+                                                coordinates = coordinates,
+                                                timeZoneId = timeZone
+                                            )
+                                        }
+                                    }
+                                } else if (matchingMedia != null && matchingMedia.isVideo) {
+                                    val isSecondary = secondaryChunkNames.contains(matchingMedia.name)
+                                    val chunkGroup = chunkGroupMap[matchingMedia.name]
+                                    if (!isSecondary && (chunkGroup == null || chunkGroup.size <= 1)) {
+                                        val destFile = File(outputDir, matchingMedia.name)
+                                        if (destFile.exists()) {
+                                            if (burnVideoOverlays) {
+                                                val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                                    context = context,
+                                                    videoFile = destFile,
+                                                    overlayFile = overlayFile
+                                                )
+                                                if (vMerged) overlaysMerged++
+                                            } else {
+                                                val destOverlay = File(outputDir, "$baseKey-overlay.png")
+                                                overlayFile.copyTo(destOverlay, overwrite = true)
+                                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             entry = zis.nextEntry
                         }
@@ -533,7 +595,24 @@ class ExportProcessWorker(
         }
 
         // Step 3: Fast remux multi-part video chunk groups in chronological order
+        var groupIndex = 0
         for ((primaryName, group) in chunkGroupMap) {
+            groupIndex++
+            workProgress++
+            val statusMsg = "Stitching video stories ($groupIndex of $totalChunkGroups)..."
+            setProgress(
+                workDataOf(
+                    PROGRESS_CURRENT to workProgress,
+                    PROGRESS_TOTAL to totalWorkUnits,
+                    PROGRESS_FILE to statusMsg,
+                    PROGRESS_PHOTOS to photosFixed,
+                    PROGRESS_VIDEOS to videosFixed,
+                    PROGRESS_OVERLAYS to overlaysMerged
+                )
+            )
+            val notif = createNotification(workProgress, totalWorkUnits, statusMsg)
+            notificationManager.notify(NOTIFICATION_ID, notif)
+
             val chunkFiles = group.map { File(chunkCacheDir, it.name) }
             val allChunksExist = chunkFiles.all { it.exists() && it.length() > 0 }
             if (!allChunksExist || chunkFiles.isEmpty()) continue
@@ -696,6 +775,18 @@ class ExportProcessWorker(
 
         overlayCacheDir.deleteRecursively()
         chunkCacheDir.deleteRecursively()
+
+        workProgress = totalWorkUnits
+        setProgress(
+            workDataOf(
+                PROGRESS_CURRENT to totalWorkUnits,
+                PROGRESS_TOTAL to totalWorkUnits,
+                PROGRESS_FILE to "Finalizing gallery indexing...",
+                PROGRESS_PHOTOS to photosFixed,
+                PROGRESS_VIDEOS to videosFixed,
+                PROGRESS_OVERLAYS to overlaysMerged
+            )
+        )
 
         val totalFixed = photosFixed + videosFixed
 

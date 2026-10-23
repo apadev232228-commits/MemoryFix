@@ -52,6 +52,7 @@ class ProcessingFragment : Fragment() {
 
                 val current = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_CURRENT, 0)
                 val total = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_TOTAL, 0)
+                val progressFile = workInfo.progress.getString(ExportProcessWorker.PROGRESS_FILE)
                 val photosCount = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_PHOTOS, 0)
                 val videosCount = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_VIDEOS, 0)
                 val overlaysCount = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_OVERLAYS, 0)
@@ -61,18 +62,27 @@ class ProcessingFragment : Fragment() {
                 binding.tvLiveOverlaysMerged.text = overlaysCount.toString()
 
                 if (total > 0 && current > 0) {
-                    val percent = (current * 100) / total
+                    val percent = ((current.toLong() * 100) / total).toInt().coerceIn(0, 100)
                     binding.tvProgressPercentage.text = "$percent%"
-                    binding.tvSingleStatus.text = "Restoring memory $current of $total"
+                    val displayStatus = when {
+                        progressFile?.startsWith("Stitching") == true -> progressFile
+                        progressFile?.startsWith("Finalizing") == true -> progressFile
+                        progressFile?.startsWith("Starting") == true -> progressFile
+                        !progressFile.isNullOrEmpty() -> "Restoring: $progressFile ($current of $total)"
+                        else -> "Restoring memory $current of $total"
+                    }
+                    binding.tvSingleStatus.text = displayStatus
                     binding.tvFrameDateBadge.text = "Restoring $percent%"
                     binding.progressLinear.isIndeterminate = false
                     binding.progressLinear.max = total
                     binding.progressLinear.progress = current
                 } else if (total > 0) {
                     binding.tvProgressPercentage.text = "0%"
-                    binding.tvSingleStatus.text = "Preparing $total memories..."
+                    binding.tvSingleStatus.text = progressFile ?: "Preparing $total memories..."
                     binding.tvFrameDateBadge.text = "Starting..."
-                    binding.progressLinear.isIndeterminate = true
+                    binding.progressLinear.isIndeterminate = false
+                    binding.progressLinear.max = total
+                    binding.progressLinear.progress = 0
                 } else {
                     binding.tvProgressPercentage.text = "0%"
                     binding.tvSingleStatus.text = "Preparing your memories..."
