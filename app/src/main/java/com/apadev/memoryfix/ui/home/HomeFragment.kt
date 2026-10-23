@@ -17,6 +17,7 @@ import com.apadev.memoryfix.databinding.FragmentHomeBinding
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.apadev.memoryfix.data.ZipMetadataReader
+import com.apadev.memoryfix.ui.pro.ProUpgradeBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -116,8 +117,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnPro.setOnClickListener {
-            val app = requireActivity().application as? MemoryFixApp
-            app?.billingManager?.launchBillingFlow(requireActivity())
+            ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
         }
 
         binding.layoutHowItWorksCard.setOnClickListener {

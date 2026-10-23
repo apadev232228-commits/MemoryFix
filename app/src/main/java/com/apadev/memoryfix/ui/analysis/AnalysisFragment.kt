@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.work.Data
@@ -15,14 +16,18 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.MemoryFixApp
+import com.apadev.memoryfix.R
 import com.apadev.memoryfix.ads.AdManager
 import com.apadev.memoryfix.data.FullScanResult
 import com.apadev.memoryfix.data.MediaScanner
 import com.apadev.memoryfix.data.ScanProgress
 import com.apadev.memoryfix.databinding.FragmentAnalysisBinding
 import com.apadev.memoryfix.model.ScanStats
+import com.apadev.memoryfix.ui.pro.ProUpgradeBottomSheet
 import com.apadev.memoryfix.worker.ExportProcessWorker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -39,9 +44,13 @@ class AnalysisFragment : Fragment() {
     private var selectedTimezone: String = TimeZone.getDefault().id
     private var isSettingsExpanded: Boolean = false
 
+    private var isGpsUnlockedViaAd: Boolean = false
+    private var isDuplicatesUnlockedViaAd: Boolean = false
+
     companion object {
         private const val ARG_FOLDER_URI = "ARG_FOLDER_URI"
         private const val ARG_ZIP_URIS = "ARG_ZIP_URIS"
+        private const val FREE_TIER_LIMIT = 1500
 
         fun newInstance(uri: Uri): AnalysisFragment {
             return AnalysisFragment().apply {
@@ -87,7 +96,11 @@ class AnalysisFragment : Fragment() {
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
 
+        val app = activity?.application as? MemoryFixApp
+        val billingManager = app?.billingManager
+
         AdManager.loadInterstitial(requireContext())
+        AdManager.loadRewarded(requireContext())
 
         binding.layoutScanningPhase.visibility = View.VISIBLE
         binding.layoutReadyPhase.visibility = View.GONE
@@ -97,6 +110,17 @@ class AnalysisFragment : Fragment() {
         binding.tvLiveScanCounter.text = "Initializing scan..."
         binding.btnStartProcessing.isEnabled = false
         binding.btnStartProcessing.alpha = 0.5f
+
+        // Observe Pro status
+        viewLifecycleOwner.lifecycleScope.launch {
+            billingManager?.isPro?.collectLatest { isPro ->
+                updateProUi(isPro)
+            }
+        }
+
+        binding.btnUnlockProBanner.setOnClickListener {
+            ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
+        }
 
         // Advanced Options Accordion Header
         binding.layoutSettingsHeader.setOnClickListener {
@@ -110,6 +134,54 @@ class AnalysisFragment : Fragment() {
 
         binding.btnChangeTimezone.setOnClickListener {
             showTimezoneDialog()
+        }
+
+        binding.switchEmbedLocation.setOnClickListener {
+            val isPro = billingManager?.isPro?.value ?: false
+            if (!isPro && !isGpsUnlockedViaAd && binding.switchEmbedLocation.isChecked) {
+                showFeatureUnlockDialog(
+                    title = "Unlock Smart GPS Locations",
+                    message = "Smart GPS geotagging (including 30-min surrounding location inference) is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                    onUnlockViaAd = {
+                        AdManager.showRewarded(requireActivity(), onRewardEarned = {
+                            isGpsUnlockedViaAd = true
+                            binding.badgeRewardGps.text = "UNLOCKED ✓"
+                            binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                        }, onDismissed = {
+                            if (!isGpsUnlockedViaAd) {
+                                binding.switchEmbedLocation.isChecked = false
+                            }
+                        })
+                    },
+                    onCancel = {
+                        binding.switchEmbedLocation.isChecked = false
+                    }
+                )
+            }
+        }
+
+        binding.switchSkipDuplicates.setOnClickListener {
+            val isPro = billingManager?.isPro?.value ?: false
+            if (!isPro && !isDuplicatesUnlockedViaAd && binding.switchSkipDuplicates.isChecked) {
+                showFeatureUnlockDialog(
+                    title = "Unlock Duplicate Cleaner",
+                    message = "Smart duplicate cleaner is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                    onUnlockViaAd = {
+                        AdManager.showRewarded(requireActivity(), onRewardEarned = {
+                            isDuplicatesUnlockedViaAd = true
+                            binding.badgeRewardDuplicates.text = "UNLOCKED ✓"
+                            binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                        }, onDismissed = {
+                            if (!isDuplicatesUnlockedViaAd) {
+                                binding.switchSkipDuplicates.isChecked = false
+                            }
+                        })
+                    },
+                    onCancel = {
+                        binding.switchSkipDuplicates.isChecked = false
+                    }
+                )
+            }
         }
 
         binding.switchVideoOverlay.setOnClickListener {
@@ -153,6 +225,64 @@ class AnalysisFragment : Fragment() {
             scanResult = result
             populateStats(result)
         }
+    }
+
+    private fun updateProUi(isPro: Boolean) {
+        if (_binding == null) return
+        if (isPro) {
+            binding.badgeRewardGps.visibility = View.GONE
+            binding.badgeRewardDuplicates.visibility = View.GONE
+            binding.cardLargeArchiveBanner.visibility = View.GONE
+        } else {
+            val stats = scanResult?.stats
+            if (stats != null && stats.totalMediaFiles > FREE_TIER_LIMIT) {
+                binding.cardLargeArchiveBanner.visibility = View.VISIBLE
+            }
+            binding.badgeRewardGps.visibility = View.VISIBLE
+            binding.badgeRewardDuplicates.visibility = View.VISIBLE
+
+            if (isGpsUnlockedViaAd) {
+                binding.badgeRewardGps.text = "UNLOCKED ✓"
+                binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+            } else {
+                binding.badgeRewardGps.text = "PRO / 🎬 AD"
+                binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))
+            }
+
+            if (isDuplicatesUnlockedViaAd) {
+                binding.badgeRewardDuplicates.text = "UNLOCKED ✓"
+                binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+            } else {
+                binding.badgeRewardDuplicates.text = "PRO / 🎬 AD"
+                binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))
+            }
+        }
+    }
+
+    private fun showFeatureUnlockDialog(
+        title: String,
+        message: String,
+        onUnlockViaAd: () -> Unit,
+        onCancel: () -> Unit
+    ) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setIcon(R.drawable.ic_auto_fix)
+            .setPositiveButton("🎬 Watch Ad to Unlock") { _, _ ->
+                onUnlockViaAd()
+            }
+            .setNeutralButton("💎 Upgrade to Pro") { _, _ ->
+                onCancel()
+                ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
+            }
+            .setNegativeButton("Keep Off") { _, _ ->
+                onCancel()
+            }
+            .setOnCancelListener {
+                onCancel()
+            }
+            .show()
     }
 
     private fun hasMismatch(s: ScanStats): Boolean {
@@ -206,6 +336,15 @@ class AnalysisFragment : Fragment() {
         binding.tvPhotoCount.text = "${numberFormat.format(s.photoCount)} Photos"
         binding.tvVideoCount.text = "${numberFormat.format(s.videoCount)} Videos"
 
+        val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
+        if (s.totalMediaFiles > FREE_TIER_LIMIT && !isPro) {
+            binding.cardLargeArchiveBanner.visibility = View.VISIBLE
+            binding.tvLargeArchiveTitle.text = "💎 Large Archive Detected (${numberFormat.format(s.totalMediaFiles)} memories)"
+            binding.tvLargeArchiveDesc.text = "Free tier restores up to 1,500 memories with ads. Upgrade to Pro to restore all ${numberFormat.format(s.totalMediaFiles)} memories in one run with zero ads."
+        } else {
+            binding.cardLargeArchiveBanner.visibility = View.GONE
+        }
+
         if (s.totalMediaFiles > 0) {
             val photoPct = (s.photoCount * 100) / s.totalMediaFiles
             val videoPct = 100 - photoPct
@@ -232,7 +371,7 @@ class AnalysisFragment : Fragment() {
             binding.layoutHighlightOverlays.visibility = View.VISIBLE
             binding.tvHighlightOverlays.text = "${numberFormat.format(s.overlayCount)} stickers & captions will be combined onto photos"
             binding.cardOverlays.visibility = View.VISIBLE
-            binding.tvOverlayTitle.text = "Merge Photo Overlays (${numberFormat.format(s.photoOverlayCount)})"
+            binding.tvOverlayTitle.text = "Combine Photo Overlays (${numberFormat.format(s.photoOverlayCount)})"
             if (s.videoOverlayCount > 0) {
                 binding.layoutVideoOverlayOption.visibility = View.VISIBLE
                 binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s/video)"
@@ -259,93 +398,70 @@ class AnalysisFragment : Fragment() {
             binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
             binding.tvSkipDuplicatesDesc.text = "${numberFormat.format(s.duplicateCount)} duplicate memories found — keep only 1 clean copy"
         } else {
-            binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
-            binding.tvSkipDuplicatesDesc.text = "Keeps only 1 copy of identical re-saved memories"
+            binding.layoutSkipDuplicatesOption.visibility = View.GONE
         }
 
-        // Mismatch Alert (Visible only when needed)
+        // Mismatch Notification
         if (hasMismatch(s)) {
             binding.cardMismatch.visibility = View.VISIBLE
             if (!s.hasMetadataFile) {
-                binding.tvMismatchTitle.text = "Export History Not Found"
-                binding.tvMismatchDesc.text = "Could not find a Snapchat history file in this archive. We will restore dates using original file creation timestamps."
+                binding.tvMismatchTitle.text = "Missing memories_history.json"
+                binding.tvMismatchDesc.text = "Archive is missing the metadata index. Timestamps will fall back to media timestamps where available."
             } else if (s.totalMetadataEntries > (s.totalMediaFiles + s.duplicateCount)) {
-                val missingCount = s.totalMetadataEntries - (s.totalMediaFiles + s.duplicateCount)
-                binding.tvMismatchTitle.text = "Missing Memories ($missingCount files)"
-                binding.tvMismatchDesc.text = "Your export history lists ${numberFormat.format(s.totalMetadataEntries)} memories, but only ${numberFormat.format(s.totalMediaFiles + s.duplicateCount)} files were found (${numberFormat.format(missingCount)} missing). If your export had multiple ZIP parts (e.g. zip-1 and zip-2), select all ZIP files together."
-            } else if (s.matchedCount < s.totalMediaFiles) {
+                val missing = s.totalMetadataEntries - (s.totalMediaFiles + s.duplicateCount)
+                binding.tvMismatchTitle.text = "$missing Memories Missing from Export"
+                binding.tvMismatchDesc.text = "Snapchat metadata references ${s.totalMetadataEntries} memories, but only ${s.totalMediaFiles + s.duplicateCount} were found in the selected files."
+            } else {
                 val unmatched = s.totalMediaFiles - s.matchedCount
-                binding.tvMismatchTitle.text = "Unmatched Media ($unmatched files)"
-                binding.tvMismatchDesc.text = "$unmatched file(s) couldn't be matched with your export history. Their capture dates will still be fixed using file creation timestamps."
+                binding.tvMismatchTitle.text = "$unmatched Files Without Metadata"
+                binding.tvMismatchDesc.text = "Some media files could not be matched with memories history. Their existing timestamps will be preserved."
             }
         } else {
             binding.cardMismatch.visibility = View.GONE
         }
 
-        if (s.totalMediaFiles > 0) {
-            binding.btnStartProcessing.isEnabled = true
-            binding.btnStartProcessing.alpha = 1.0f
-            binding.btnStartProcessing.text = "Fix My Memories"
-        } else {
-            binding.btnStartProcessing.isEnabled = false
-            binding.btnStartProcessing.alpha = 0.5f
-            binding.btnStartProcessing.text = "No Memories Found"
-        }
+        binding.btnStartProcessing.isEnabled = true
+        binding.btnStartProcessing.alpha = 1.0f
     }
 
-    private fun showMismatchWarningDialog(stats: ScanStats) {
-        val numberFormat = NumberFormat.getIntegerInstance()
-        val title: String
-        val message: String
-        val positiveButtonText: String
-
-        val totalFoundWithDuplicates = stats.totalMediaFiles + stats.duplicateCount
-        if (!stats.hasMetadataFile) {
-            title = "Export History Not Found"
-            message = "We couldn't find your Snapchat history metadata file.\n\nCapture dates will be restored using each file's original creation timestamp instead.\n\nWould you like to proceed?"
-            positiveButtonText = "Fix Using Timestamps"
-        } else if (stats.totalMetadataEntries > totalFoundWithDuplicates) {
-            val missingCount = stats.totalMetadataEntries - totalFoundWithDuplicates
-            title = "Missing Memories Detected"
-            message = "Your Snapchat history lists ${numberFormat.format(stats.totalMetadataEntries)} memories, but only ${numberFormat.format(totalFoundWithDuplicates)} files were found (${numberFormat.format(missingCount)} missing).\n\nIf your export came in multiple ZIP files (e.g. zip-1 and zip-2), select all ZIP parts together.\n\nWould you like to fix the ${numberFormat.format(stats.totalMediaFiles)} available files now, or select other files?"
-            positiveButtonText = "Fix Available (${numberFormat.format(stats.totalMediaFiles)})"
-        } else if (stats.matchedCount < stats.totalMediaFiles) {
-            val unmatched = stats.totalMediaFiles - stats.matchedCount
-            title = "Unmatched Memories Detected"
-            message = "${numberFormat.format(unmatched)} file(s) couldn't be matched with your export history.\n\nWe will still fix their dates using file creation timestamps.\n\nWould you like to proceed?"
-            positiveButtonText = "Fix All Media"
-        } else {
-            startProcessing()
-            return
+    private fun showMismatchWarningDialog(s: ScanStats) {
+        val message = when {
+            !s.hasMetadataFile ->
+                "The archive doesn't contain memories_history.json. We will restore dates using media timestamps where available."
+            s.totalMetadataEntries > (s.totalMediaFiles + s.duplicateCount) -> {
+                val missing = s.totalMetadataEntries - (s.totalMediaFiles + s.duplicateCount)
+                "Snapchat metadata lists ${s.totalMetadataEntries} items, but only ${s.totalMediaFiles + s.duplicateCount} files exist. $missing memories appear to be missing from the export.\n\nWe will restore all ${s.totalMediaFiles} available files."
+            }
+            else ->
+                "Some files could not be matched with your Snapchat timeline. Their internal dates will be kept as-is."
         }
 
         AlertDialog.Builder(requireContext())
-            .setTitle(title)
+            .setTitle("Proceed with Fix?")
             .setMessage(message)
-            .setPositiveButton(positiveButtonText) { _, _ ->
+            .setPositiveButton("Start Fixing Anyway") { _, _ ->
                 startProcessing()
             }
-            .setNegativeButton("Select Another Archive") { _, _ ->
-                (activity as? MainActivity)?.navigateToHome()
-            }
-            .setNeutralButton("Cancel", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
     private fun showTimezoneDialog() {
-        val defaultId = TimeZone.getDefault().id
         val popularZones = listOf(
-            defaultId,
             "UTC",
-            "Asia/Kolkata",
             "America/New_York",
-            "America/Los_Angeles",
             "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
             "Europe/London",
             "Europe/Paris",
+            "Europe/Berlin",
             "Asia/Dubai",
+            "Asia/Kolkata",
+            "Asia/Singapore",
             "Asia/Tokyo",
-            "Australia/Sydney"
+            "Australia/Sydney",
+            TimeZone.getDefault().id
         ).distinct()
 
         val allZones = popularZones.toTypedArray()
@@ -363,11 +479,37 @@ class AnalysisFragment : Fragment() {
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
 
-        val embedLocation = binding.switchEmbedLocation.isChecked
+        val app = activity?.application as? MemoryFixApp
+        val isPro = app?.billingManager?.isPro?.value ?: false
+        val stats = scanResult?.stats
+        val totalMedia = stats?.totalMediaFiles ?: 0
+
+        if (totalMedia > FREE_TIER_LIMIT && !isPro) {
+            val formattedPrice = app?.billingManager?.getFormattedPrice() ?: "$4.99"
+            val numberFormat = NumberFormat.getIntegerInstance()
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Restore 1,500 Free or Unlock All?")
+                .setMessage("Your export has ${numberFormat.format(totalMedia)} memories.\n\nFree tier restores up to 1,500 memories per run. Upgrade to Lifetime Pro ($formattedPrice) to restore all ${numberFormat.format(totalMedia)} memories in one run with zero ads.")
+                .setIcon(R.drawable.ic_auto_fix)
+                .setPositiveButton("💎 Unlock Pro ($formattedPrice)") { _, _ ->
+                    ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
+                }
+                .setNegativeButton("Restore 1,500 Free") { _, _ ->
+                    executeProcessing(isZipSource = isZipSource, isPro = false, maxLimit = FREE_TIER_LIMIT)
+                }
+                .show()
+            return
+        }
+
+        executeProcessing(isZipSource = isZipSource, isPro = isPro, maxLimit = if (isPro) -1 else FREE_TIER_LIMIT)
+    }
+
+    private fun executeProcessing(isZipSource: Boolean, isPro: Boolean, maxLimit: Int) {
+        val embedLocation = binding.switchEmbedLocation.isChecked && (isPro || isGpsUnlockedViaAd)
         val mergeOverlays = binding.switchOverlay.isChecked
         val burnVideoOverlays = binding.switchVideoOverlay.isChecked
         val mergeVideoChunks = binding.switchMergeVideoChunks.isChecked
-        val skipDuplicates = binding.switchSkipDuplicates.isChecked
+        val skipDuplicates = binding.switchSkipDuplicates.isChecked && (isPro || isDuplicatesUnlockedViaAd)
 
         val inputDataBuilder = Data.Builder()
             .putBoolean(ExportProcessWorker.KEY_EMBED_LOCATION, embedLocation)
@@ -376,6 +518,7 @@ class AnalysisFragment : Fragment() {
             .putBoolean(ExportProcessWorker.KEY_MERGE_VIDEO_CHUNKS, mergeVideoChunks)
             .putBoolean(ExportProcessWorker.KEY_SKIP_DUPLICATES, skipDuplicates)
             .putString(ExportProcessWorker.KEY_TIMEZONE, selectedTimezone)
+            .putInt(ExportProcessWorker.KEY_MAX_MEDIA_LIMIT, maxLimit)
 
         if (isZipSource) {
             inputDataBuilder.putStringArray(
@@ -390,7 +533,6 @@ class AnalysisFragment : Fragment() {
             .setInputData(inputDataBuilder.build())
             .build()
 
-        val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
         AdManager.showInterstitial(requireActivity(), isPro) {
             WorkManager.getInstance(requireContext()).enqueueUniqueWork(
                 "MemoryFixExport",

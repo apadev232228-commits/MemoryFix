@@ -136,6 +136,10 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
         }
     }
 
+    fun getFormattedPrice(): String {
+        return productDetailsMap[PRODUCT_ID_PRO]?.oneTimePurchaseOfferDetails?.formattedPrice ?: "$4.99"
+    }
+
     private fun setProStatus(isPro: Boolean) {
         prefs.edit().putBoolean(KEY_IS_PRO, isPro).apply()
         _isPro.value = isPro

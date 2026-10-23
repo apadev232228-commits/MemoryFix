@@ -6,19 +6,26 @@ import android.view.ViewGroup
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
 object AdManager {
 
     // Official Google AdMob sample test IDs
     private const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
     private const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
+    private const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
 
     private var interstitialAd: InterstitialAd? = null
     private var isAdLoading = false
 
+    private var rewardedAd: RewardedAd? = null
+    private var isRewardedLoading = false
+
     fun init(context: Context) {
         MobileAds.initialize(context) {}
         loadInterstitial(context)
+        loadRewarded(context)
     }
 
     fun loadBanner(container: ViewGroup, isPro: Boolean) {
@@ -84,5 +91,70 @@ object AdManager {
         }
 
         interstitialAd?.show(activity)
+    }
+
+    fun loadRewarded(context: Context) {
+        if (rewardedAd != null || isRewardedLoading) return
+        isRewardedLoading = true
+
+        val adRequest = AdRequest.Builder().build()
+        RewardedAd.load(
+            context,
+            TEST_REWARDED_ID,
+            adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd = ad
+                    isRewardedLoading = false
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    rewardedAd = null
+                    isRewardedLoading = false
+                }
+            }
+        )
+    }
+
+    fun isRewardedAdReady(): Boolean = rewardedAd != null
+
+    fun showRewarded(
+        activity: Activity,
+        onRewardEarned: () -> Unit,
+        onDismissed: () -> Unit
+    ) {
+        val currentAd = rewardedAd
+        if (currentAd == null) {
+            // If ad not ready, grant reward so user is never blocked
+            loadRewarded(activity)
+            onRewardEarned()
+            onDismissed()
+            return
+        }
+
+        var rewardGranted = false
+
+        currentAd.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                rewardedAd = null
+                loadRewarded(activity)
+                if (rewardGranted) {
+                    onRewardEarned()
+                }
+                onDismissed()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                rewardedAd = null
+                loadRewarded(activity)
+                // If failed to show, grant reward gracefully
+                onRewardEarned()
+                onDismissed()
+            }
+        }
+
+        currentAd.show(activity) { _ ->
+            rewardGranted = true
+        }
     }
 }

@@ -43,6 +43,7 @@ class ExportProcessWorker(
         const val KEY_MERGE_VIDEO_CHUNKS = "KEY_MERGE_VIDEO_CHUNKS"
         const val KEY_SKIP_DUPLICATES = "KEY_SKIP_DUPLICATES"
         const val KEY_TIMEZONE = "KEY_TIMEZONE"
+        const val KEY_MAX_MEDIA_LIMIT = "KEY_MAX_MEDIA_LIMIT"
 
         const val PROGRESS_CURRENT = "PROGRESS_CURRENT"
         const val PROGRESS_TOTAL = "PROGRESS_TOTAL"
@@ -73,6 +74,7 @@ class ExportProcessWorker(
         val mergeVideoChunks = inputData.getBoolean(KEY_MERGE_VIDEO_CHUNKS, true)
         val skipDuplicates = inputData.getBoolean(KEY_SKIP_DUPLICATES, true)
         val timeZone = inputData.getString(KEY_TIMEZONE) ?: "UTC"
+        val maxMediaLimit = inputData.getInt(KEY_MAX_MEDIA_LIMIT, -1)
 
         createNotificationChannel()
         val initialNotification = createNotification(0, 100, "Scanning files...")
@@ -94,6 +96,7 @@ class ExportProcessWorker(
                 mergeVideoChunks = mergeVideoChunks,
                 skipDuplicates = skipDuplicates,
                 timeZone = timeZone,
+                maxMediaLimit = maxMediaLimit,
                 notificationManager = notificationManager
             )
         }
@@ -121,7 +124,8 @@ class ExportProcessWorker(
                 }
             }
         }
-        val list = scanResult.mediaList
+        val rawList = scanResult.mediaList
+        val list = if (maxMediaLimit > 0) rawList.take(maxMediaLimit) else rawList
         val total = list.size
 
         if (total == 0) {
@@ -328,7 +332,7 @@ class ExportProcessWorker(
                 RESULT_VIDEOS to videosFixed,
                 RESULT_OVERLAYS_MERGED to overlaysMerged,
                 RESULT_FAILED to failedCount,
-                RESULT_TOTAL_SCANNED to total
+                RESULT_TOTAL_SCANNED to rawList.size
             )
         )
     }
@@ -341,6 +345,7 @@ class ExportProcessWorker(
         mergeVideoChunks: Boolean,
         skipDuplicates: Boolean,
         timeZone: String,
+        maxMediaLimit: Int = -1,
         notificationManager: NotificationManager
     ): Result {
         val outputDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Snapchat Memories")
@@ -352,7 +357,8 @@ class ExportProcessWorker(
         } else {
             MediaScanner.scanZipUris(context, zipUris, targetTimeZone = timeZone)
         }
-        val list = scanResult.mediaList
+        val rawList = scanResult.mediaList
+        val list = if (maxMediaLimit > 0) rawList.take(maxMediaLimit) else rawList
         val total = list.size
 
         if (total == 0) {
@@ -806,7 +812,7 @@ class ExportProcessWorker(
                 RESULT_VIDEOS to videosFixed,
                 RESULT_OVERLAYS_MERGED to overlaysMerged,
                 RESULT_FAILED to failedCount,
-                RESULT_TOTAL_SCANNED to total
+                RESULT_TOTAL_SCANNED to rawList.size
             )
         )
     }
