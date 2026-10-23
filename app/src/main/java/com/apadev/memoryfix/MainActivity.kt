@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
                 when (currentFragment) {
                     is ProcessingFragment -> {
-                        // Don't allow back during processing — user must tap Cancel
+                        currentFragment.showCancelConfirmationDialog()
                     }
                     is ResultFragment -> {
                         // From result, go straight to home (skip analysis)

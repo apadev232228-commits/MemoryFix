@@ -45,9 +45,16 @@
     <string name="btn_start_processing">Start Fixing Memories</string>
 
     <!-- Processing Screen -->
-    <string name="processing_title">Fixing Your Memories…</string>
-    <string name="processing_subtitle">Please keep the app open while we process your files</string>
+    <string name="processing_title">Restoring Memories</string>
+    <string name="processing_live_badge">RESTORATION IN PROGRESS</string>
+    <string name="processing_safe_title">Safe to minimize or lock</string>
+    <string name="processing_safe_desc">Restoration runs as a background service. You will receive a notification when finished.</string>
     <string name="btn_cancel">Cancel</string>
+    <string name="btn_cancel_processing">Cancel Restoration</string>
+    <string name="dialog_cancel_title">Cancel Restoration?</string>
+    <string name="dialog_cancel_message">All progress will be lost and you will have to restart the fix from the beginning.</string>
+    <string name="dialog_keep_restoring">Keep Restoring</string>
+    <string name="dialog_confirm_cancel">Cancel Restoration</string>
 
     <!-- Result Screen -->
     <string name="result_success_title">All Memories Fixed!</string>

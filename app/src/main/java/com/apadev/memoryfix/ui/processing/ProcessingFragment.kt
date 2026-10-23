@@ -9,20 +9,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.apadev.memoryfix.MainActivity
+import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentProcessingBinding
 import com.apadev.memoryfix.worker.ExportProcessWorker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class ProcessingFragment : Fragment() {
 
     private var _binding: FragmentProcessingBinding? = null
     private val binding get() = _binding!!
 
-    private var pulseAnimator: ObjectAnimator? = null
-    private var sparkleAnimator: ObjectAnimator? = null
+    private var glowAnimator: ObjectAnimator? = null
+    private var iconAnimator: ObjectAnimator? = null
+    private var liveDotAnimator: ObjectAnimator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,13 +42,18 @@ class ProcessingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        startPhotoRestorationAnimation()
+        startPulseAnimation()
 
         binding.btnCancelProcessing.setOnClickListener {
-            WorkManager.getInstance(requireContext()).cancelUniqueWork("MemoryFixExport")
-            Toast.makeText(requireContext(), "Processing cancelled", Toast.LENGTH_SHORT).show()
-            (activity as? MainActivity)?.navigateToHome()
+            showCancelConfirmationDialog()
         }
+
+        // Intercept back gesture while processing to prevent accidental loss
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                showCancelConfirmationDialog()
+            }
+        })
 
         WorkManager.getInstance(requireContext())
             .getWorkInfosForUniqueWorkLiveData("MemoryFixExport")
@@ -64,29 +75,29 @@ class ProcessingFragment : Fragment() {
                 if (total > 0 && current > 0) {
                     val percent = ((current.toLong() * 100) / total).toInt().coerceIn(0, 100)
                     binding.tvProgressPercentage.text = "$percent%"
+                    binding.tvItemCounter.text = "Restoring $current of $total memories"
                     val displayStatus = when {
                         progressFile?.startsWith("Stitching") == true -> progressFile
                         progressFile?.startsWith("Finalizing") == true -> progressFile
                         progressFile?.startsWith("Starting") == true -> progressFile
-                        !progressFile.isNullOrEmpty() -> "Restoring: $progressFile ($current of $total)"
+                        !progressFile.isNullOrEmpty() -> "Restoring: $progressFile"
                         else -> "Restoring memory $current of $total"
                     }
                     binding.tvSingleStatus.text = displayStatus
-                    binding.tvFrameDateBadge.text = "Restoring $percent%"
                     binding.progressLinear.isIndeterminate = false
                     binding.progressLinear.max = total
                     binding.progressLinear.progress = current
                 } else if (total > 0) {
                     binding.tvProgressPercentage.text = "0%"
-                    binding.tvSingleStatus.text = progressFile ?: "Preparing $total memories..."
-                    binding.tvFrameDateBadge.text = "Starting..."
+                    binding.tvItemCounter.text = "Preparing $total memories..."
+                    binding.tvSingleStatus.text = progressFile ?: "Starting restoration..."
                     binding.progressLinear.isIndeterminate = false
                     binding.progressLinear.max = total
                     binding.progressLinear.progress = 0
                 } else {
                     binding.tvProgressPercentage.text = "0%"
+                    binding.tvItemCounter.text = "Initializing restoration..."
                     binding.tvSingleStatus.text = "Preparing your memories..."
-                    binding.tvFrameDateBadge.text = "Starting..."
                     binding.progressLinear.isIndeterminate = true
                 }
 
@@ -113,21 +124,60 @@ class ProcessingFragment : Fragment() {
             }
     }
 
-    private fun startPhotoRestorationAnimation() {
-        val target = binding.layoutPhotoFrame
-        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1.0f, 1.05f)
-        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1.0f, 1.05f)
+    fun showCancelConfirmationDialog() {
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_cancel_title)
+            .setMessage(R.string.dialog_cancel_message)
+            .setIcon(R.drawable.ic_warning)
+            .setPositiveButton(R.string.dialog_keep_restoring) { d, _ ->
+                d.dismiss()
+            }
+            .setNegativeButton(R.string.dialog_confirm_cancel) { _, _ ->
+                cancelProcessing()
+            }
+            .show()
 
-        pulseAnimator = ObjectAnimator.ofPropertyValuesHolder(target, scaleX, scaleY).apply {
-            duration = 1100
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+            ContextCompat.getColor(requireContext(), R.color.error)
+        )
+    }
+
+    private fun cancelProcessing() {
+        WorkManager.getInstance(requireContext()).cancelUniqueWork("MemoryFixExport")
+        Toast.makeText(requireContext(), "Restoration cancelled", Toast.LENGTH_SHORT).show()
+        (activity as? MainActivity)?.navigateToHome()
+    }
+
+    private fun startPulseAnimation() {
+        // Soft aura breathing
+        val glowTarget = binding.viewPulseGlow
+        val glowScaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 0.85f, 1.25f)
+        val glowScaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.85f, 1.25f)
+        val glowAlpha = PropertyValuesHolder.ofFloat(View.ALPHA, 0.35f, 0.85f)
+
+        glowAnimator = ObjectAnimator.ofPropertyValuesHolder(glowTarget, glowScaleX, glowScaleY, glowAlpha).apply {
+            duration = 1400
             repeatCount = ValueAnimator.INFINITE
             repeatMode = ValueAnimator.REVERSE
             interpolator = AccelerateDecelerateInterpolator()
             start()
         }
 
-        sparkleAnimator = ObjectAnimator.ofFloat(binding.ivSparkleBadge, View.ROTATION, -15f, 15f).apply {
-            duration = 900
+        // Central icon gentle pulse
+        val iconTarget = binding.ivAnimatedIcon
+        val iconScaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 0.95f, 1.08f)
+        val iconScaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.95f, 1.08f)
+        iconAnimator = ObjectAnimator.ofPropertyValuesHolder(iconTarget, iconScaleX, iconScaleY).apply {
+            duration = 1400
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+
+        // Live dot subtle blink
+        liveDotAnimator = ObjectAnimator.ofFloat(binding.viewLiveDot, View.ALPHA, 0.4f, 1.0f).apply {
+            duration = 800
             repeatCount = ValueAnimator.INFINITE
             repeatMode = ValueAnimator.REVERSE
             interpolator = AccelerateDecelerateInterpolator()
@@ -137,10 +187,12 @@ class ProcessingFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        pulseAnimator?.cancel()
-        pulseAnimator = null
-        sparkleAnimator?.cancel()
-        sparkleAnimator = null
+        glowAnimator?.cancel()
+        glowAnimator = null
+        iconAnimator?.cancel()
+        iconAnimator = null
+        liveDotAnimator?.cancel()
+        liveDotAnimator = null
         _binding = null
     }
 }
