@@ -296,91 +296,6 @@
                             android:textSize="11sp" />
                     </LinearLayout>
                 </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="14dp"
-                    android:background="@color/surface_border" />
-
-                <!-- Automatic Restoration Highlights -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Item 1: Exact Date Match -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_check_circle"
-                            app:tint="@color/accent" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="Accurate UTC capture timestamps from ZIP metadata"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- Item 2: Overlays -->
-                    <LinearLayout
-                        android:id="@+id/layoutHighlightOverlays"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_check_circle"
-                            app:tint="@color/accent" />
-
-                        <TextView
-                            android:id="@+id/tvHighlightOverlays"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="164 stickers &amp; captions will be combined onto photos"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- Item 3: Multi-part video clips -->
-                    <LinearLayout
-                        android:id="@+id/layoutHighlightVideoChunks"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_check_circle"
-                            app:tint="@color/accent" />
-
-                        <TextView
-                            android:id="@+id/tvHighlightVideoChunks"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="Multi-part recording clips will be stitched in order"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-                </LinearLayout>
             </LinearLayout>
 
             <!-- Mismatch / Missing File Alert (Visible only when needed) -->
@@ -741,7 +656,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="1dp"
-                                android:text="Bakes stickers, text &amp; filters directly into photos"
+                                android:text="Bakes stickers, text &amp; captions directly onto photos"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="11sp" />
                         </LinearLayout>
@@ -752,7 +667,7 @@
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            android:checked="true" />
+                            android:checked="false" />
                     </RelativeLayout>
 
                     <!-- Option: Bake Stickers into Videos (Slow, Optional) -->
@@ -898,7 +813,7 @@
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            android:checked="true" />
+                            android:checked="false" />
                     </RelativeLayout>
                 </LinearLayout>
 

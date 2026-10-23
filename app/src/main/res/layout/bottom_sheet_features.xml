@@ -302,7 +302,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Composites separate overlay PNGs (text, captions, filters, stickers) directly back onto photos and videos with frame-matching resolution."
+                        android:text="Composites separate overlay PNGs (text, captions, stickers) directly back onto photos and videos with frame-matching resolution."
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>

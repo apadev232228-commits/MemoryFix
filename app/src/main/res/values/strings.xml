@@ -34,7 +34,7 @@
     <string name="toggle_location_desc">Adds latitude &amp; longitude coordinates so photos appear on your photo map</string>
 
     <string name="toggle_overlay_title">Merge Overlay Stickers &amp; Text</string>
-    <string name="toggle_overlay_desc">Bakes captions, filters, and stickers directly onto the original photo</string>
+    <string name="toggle_overlay_desc">Bakes captions and stickers directly onto the original photo</string>
 
     <string name="toggle_duplicates_title">Organize Duplicate Files</string>
     <string name="toggle_duplicates_desc">Identifies identical raw files across multi-ZIP parts and groups them</string>

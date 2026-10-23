@@ -76,11 +76,11 @@ class ExportProcessWorker(
         val treeUriString = inputData.getString(KEY_TREE_URI)
         if (zipUriStrings.isNullOrEmpty() && treeUriString == null) return@withContext Result.failure()
 
-        val embedLocation = inputData.getBoolean(KEY_EMBED_LOCATION, true)
-        val mergeOverlays = inputData.getBoolean(KEY_MERGE_OVERLAYS, true)
+        val embedLocation = inputData.getBoolean(KEY_EMBED_LOCATION, false)
+        val mergeOverlays = inputData.getBoolean(KEY_MERGE_OVERLAYS, false)
         val burnVideoOverlays = inputData.getBoolean(KEY_BURN_VIDEO_OVERLAYS, false)
-        val mergeVideoChunks = inputData.getBoolean(KEY_MERGE_VIDEO_CHUNKS, true)
-        val skipDuplicates = inputData.getBoolean(KEY_SKIP_DUPLICATES, true)
+        val mergeVideoChunks = inputData.getBoolean(KEY_MERGE_VIDEO_CHUNKS, false)
+        val skipDuplicates = inputData.getBoolean(KEY_SKIP_DUPLICATES, false)
         val timeZone = inputData.getString(KEY_TIMEZONE) ?: "UTC"
         val maxMediaLimit = inputData.getInt(KEY_MAX_MEDIA_LIMIT, -1)
 
@@ -278,16 +278,6 @@ class ExportProcessWorker(
                     if (vSuccess) {
                         videosFixed++
                         itemFixed = true
-                    }
-                    // If video overlay was not burned into video, sync its date and GPS so it sits next to the video
-                    if (item.overlayUri != null && !burnVideoOverlays) {
-                        ExifManager.applyMetadataToImage(
-                            context = context,
-                            uri = item.overlayUri!!,
-                            epochMillis = epochMillis,
-                            coordinates = coordinates,
-                            timeZoneId = timeZone
-                        )
                     }
                 } else {
                     val pSuccess = ExifManager.applyMetadataToImage(
@@ -503,24 +493,14 @@ class ExportProcessWorker(
 
                                         val baseKey = MediaScanner.extractCanonicalBaseKey(baseName)
                                         val cachedOverlay = File(overlayCacheDir, "$baseKey.png")
-                                        if (cachedOverlay.exists()) {
-                                            if (burnVideoOverlays) {
-                                                val vMerged = VideoOverlayCompositor.compositeInPlace(
-                                                    context = context,
-                                                    videoFile = destFile,
-                                                    overlayFile = cachedOverlay
-                                                )
-                                                if (vMerged) {
-                                                    overlaysMerged++
-                                                } else {
-                                                    val destOverlay = File(outputDir, "$baseKey-overlay.png")
-                                                    cachedOverlay.copyTo(destOverlay, overwrite = true)
-                                                    MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
-                                                }
-                                            } else {
-                                                val destOverlay = File(outputDir, "$baseKey-overlay.png")
-                                                cachedOverlay.copyTo(destOverlay, overwrite = true)
-                                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                                        if (cachedOverlay.exists() && burnVideoOverlays) {
+                                            val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                                context = context,
+                                                videoFile = destFile,
+                                                overlayFile = cachedOverlay
+                                            )
+                                            if (vMerged) {
+                                                overlaysMerged++
                                             }
                                         }
 
@@ -602,19 +582,13 @@ class ExportProcessWorker(
                                     val chunkGroup = chunkGroupMap[matchingMedia.name]
                                     if (!isSecondary && (chunkGroup == null || chunkGroup.size <= 1)) {
                                         val destFile = File(outputDir, matchingMedia.name)
-                                        if (destFile.exists()) {
-                                            if (burnVideoOverlays) {
-                                                val vMerged = VideoOverlayCompositor.compositeInPlace(
-                                                    context = context,
-                                                    videoFile = destFile,
-                                                    overlayFile = overlayFile
-                                                )
-                                                if (vMerged) overlaysMerged++
-                                            } else {
-                                                val destOverlay = File(outputDir, "$baseKey-overlay.png")
-                                                overlayFile.copyTo(destOverlay, overwrite = true)
-                                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
-                                            }
+                                        if (destFile.exists() && burnVideoOverlays) {
+                                            val vMerged = VideoOverlayCompositor.compositeInPlace(
+                                                context = context,
+                                                videoFile = destFile,
+                                                overlayFile = overlayFile
+                                            )
+                                            if (vMerged) overlaysMerged++
                                         }
                                     }
                                 }
@@ -737,24 +711,14 @@ class ExportProcessWorker(
                         }
                     }
 
-                    if (overlayToApply != null && overlayToApply.exists()) {
-                        if (burnVideoOverlays) {
-                            val vMerged = VideoOverlayCompositor.compositeInPlace(
-                                context = context,
-                                videoFile = primaryDestFile,
-                                overlayFile = overlayToApply
-                            )
-                            if (vMerged) {
-                                overlaysMerged++
-                            } else {
-                                val destOverlay = File(outputDir, "$primaryBaseKey-overlay.png")
-                                overlayToApply.copyTo(destOverlay, overwrite = true)
-                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
-                            }
-                        } else {
-                            val destOverlay = File(outputDir, "$primaryBaseKey-overlay.png")
-                            overlayToApply.copyTo(destOverlay, overwrite = true)
-                            MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                    if (overlayToApply != null && overlayToApply.exists() && burnVideoOverlays) {
+                        val vMerged = VideoOverlayCompositor.compositeInPlace(
+                            context = context,
+                            videoFile = primaryDestFile,
+                            overlayFile = overlayToApply
+                        )
+                        if (vMerged) {
+                            overlaysMerged++
                         }
                     }
 
@@ -777,24 +741,14 @@ class ExportProcessWorker(
 
                     val cKey = MediaScanner.extractCanonicalBaseKey(chunk.file.name)
                     val cOverlay = File(overlayCacheDir, "$cKey.png")
-                    if (cOverlay.exists()) {
-                        if (burnVideoOverlays) {
-                            val vMerged = VideoOverlayCompositor.compositeInPlace(
-                                context = context,
-                                videoFile = destFile,
-                                overlayFile = cOverlay
-                            )
-                            if (vMerged) {
-                                overlaysMerged++
-                            } else {
-                                val destOverlay = File(outputDir, "$cKey-overlay.png")
-                                cOverlay.copyTo(destOverlay, overwrite = true)
-                                MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
-                            }
-                        } else {
-                            val destOverlay = File(outputDir, "$cKey-overlay.png")
-                            cOverlay.copyTo(destOverlay, overwrite = true)
-                            MediaScannerConnection.scanFile(context, arrayOf(destOverlay.absolutePath), null, null)
+                    if (cOverlay.exists() && burnVideoOverlays) {
+                        val vMerged = VideoOverlayCompositor.compositeInPlace(
+                            context = context,
+                            videoFile = destFile,
+                            overlayFile = cOverlay
+                        )
+                        if (vMerged) {
+                            overlaysMerged++
                         }
                     }
 

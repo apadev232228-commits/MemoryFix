@@ -218,7 +218,7 @@ class AnalysisFragment : Fragment() {
             if (binding.switchVideoOverlay.isChecked) {
                 AlertDialog.Builder(requireContext())
                     .setTitle("Burn Stickers into Videos?")
-                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to original untouched videos.\n\nIf turned off, video stickers are still preserved alongside your videos.")
+                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to original untouched videos.\n\nIf turned off, original videos are preserved at full speed and quality without overlay stickers.")
                     .setPositiveButton("Enable (Slower)") { _, _ -> }
                     .setNegativeButton("Keep Off (Recommended)") { _, _ ->
                         binding.switchVideoOverlay.isChecked = false
@@ -263,8 +263,6 @@ class AnalysisFragment : Fragment() {
             binding.badgeRewardGps.visibility = View.GONE
             binding.badgeRewardDuplicates.visibility = View.GONE
             binding.cardLargeArchiveBanner.visibility = View.GONE
-            binding.switchEmbedLocation.isChecked = true
-            binding.switchSkipDuplicates.isChecked = true
         } else {
             val stats = scanResult?.stats
             if (stats != null && stats.totalMediaFiles > FREE_TIER_LIMIT) {
@@ -434,10 +432,8 @@ class AnalysisFragment : Fragment() {
         val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
         updateProUi(isPro)
 
-        // Automatic Highlights & Group Visibility
+        // Group Visibility
         if (s.overlayCount > 0) {
-            binding.layoutHighlightOverlays.visibility = View.VISIBLE
-            binding.tvHighlightOverlays.text = "${numberFormat.format(s.overlayCount)} stickers & captions will be combined onto photos"
             binding.groupStickersAndOverlays.visibility = View.VISIBLE
             binding.cardOverlays.visibility = View.VISIBLE
             binding.tvOverlayTitle.text = "Combine Photo Overlays (${numberFormat.format(s.photoOverlayCount)})"
@@ -450,18 +446,14 @@ class AnalysisFragment : Fragment() {
                 binding.layoutVideoOverlayOption.visibility = View.GONE
             }
         } else {
-            binding.layoutHighlightOverlays.visibility = View.GONE
             binding.groupStickersAndOverlays.visibility = View.GONE
         }
 
         if (s.videoChunkGroupsCount > 0) {
-            binding.layoutHighlightVideoChunks.visibility = View.VISIBLE
-            binding.tvHighlightVideoChunks.text = "${s.videoChunkGroupsCount} multi-part recordings will be stitched in order"
             binding.groupVideoChunks.visibility = View.VISIBLE
             binding.layoutMergeVideoChunksOption.visibility = View.VISIBLE
             binding.tvMergeVideoChunksTitle.text = "Stitch ${s.videoChunkGroupsCount} Multi-Part Videos"
         } else {
-            binding.layoutHighlightVideoChunks.visibility = View.GONE
             binding.groupVideoChunks.visibility = View.GONE
         }
 
