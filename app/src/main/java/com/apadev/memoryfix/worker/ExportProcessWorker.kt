@@ -902,9 +902,9 @@ class ExportProcessWorker(
 
         val title = if (failedCount == 0) "🎉 Restoration Complete!" else "Restoration Finished with Warnings"
         val message = if (failedCount == 0) {
-            "Successfully fixed $totalFixed memories ($photosFixed photos, $videosFixed videos) to your gallery."
+            "Successfully fixed $totalFixed memories ($photosFixed photos, $videosFixed videos) to Pictures > Snapchat Memories."
         } else {
-            "Fixed $totalFixed memories ($photosFixed photos, $videosFixed videos). $failedCount items had issues."
+            "Fixed $totalFixed memories ($photosFixed photos, $videosFixed videos) to Pictures > Snapchat Memories. $failedCount items had issues."
         }
 
         val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)

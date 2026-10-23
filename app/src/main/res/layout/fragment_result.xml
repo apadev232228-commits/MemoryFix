@@ -445,28 +445,55 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- In-place fix note -->
+        <!-- Saved Media Location Card -->
         <LinearLayout
+            android:id="@+id/cardSavedLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_tip_card"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="14dp">
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_info"
-                app:tint="@color/primary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_folder_open"
+                    app:tint="@color/accent" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:text="Saved Media Location"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView
-                android:layout_width="0dp"
+                android:id="@+id/tvSavedLocationPath"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:text="Your original files were updated in-place — no duplicate copies were created. Merged overlay stickers were cleaned up."
+                android:layout_marginTop="8dp"
+                android:text="📁 Internal Storage > Pictures > Snapchat Memories"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSavedLocationDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="All fixed photos and videos are saved here and indexed to appear in chronological order in your gallery."
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>

@@ -152,6 +152,16 @@ class ResultFragment : Fragment() {
             binding.cardErrorReport.visibility = View.GONE
         }
 
+        // Saved Media Location
+        val isZip = com.apadev.memoryfix.data.MediaScanner.lastScanResult?.isZipSource ?: true
+        if (isZip) {
+            binding.tvSavedLocationPath.text = "📁 Internal Storage > Pictures > Snapchat Memories"
+            binding.tvSavedLocationDesc.text = "All fixed photos and videos are saved in the 'Snapchat Memories' folder and indexed to appear in chronological order in your gallery."
+        } else {
+            binding.tvSavedLocationPath.text = "📁 Selected device folder (Updated in-place)"
+            binding.tvSavedLocationDesc.text = "Your original memories were updated in-place inside your selected folder — no duplicates created."
+        }
+
         binding.btnOpenGallery.setOnClickListener {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
@@ -218,6 +228,26 @@ class ResultFragment : Fragment() {
 
     private fun openPlayStoreDirectly() {
         val targetPackage = requireContext().packageName.removeSuffix(".debug")
+        if (com.apadev.memoryfix.BuildConfig.DEBUG) {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Google Play Store")
+                .setMessage("MemoryFix is currently in pre-release testing and is not yet published live on Google Play.\n\nWhile the listing is unpublished, Google Play displays 'Item not found'. You can send direct feedback to the developer or try opening the link.")
+                .setIcon(R.drawable.ic_auto_fix)
+                .setPositiveButton("Send Feedback") { _, _ ->
+                    com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.newInstance("Pre-release Feedback")
+                        .show(parentFragmentManager, com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.TAG)
+                }
+                .setNeutralButton("Try Play Store Link") { _, _ ->
+                    launchPlayStoreIntent(targetPackage)
+                }
+                .setNegativeButton("Close", null)
+                .show()
+        } else {
+            launchPlayStoreIntent(targetPackage)
+        }
+    }
+
+    private fun launchPlayStoreIntent(targetPackage: String) {
         try {
             val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$targetPackage")).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED or Intent.FLAG_ACTIVITY_CLEAR_TOP)
