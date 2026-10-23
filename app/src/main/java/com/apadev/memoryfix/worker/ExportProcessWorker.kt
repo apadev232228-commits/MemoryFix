@@ -25,6 +25,9 @@ import com.apadev.memoryfix.logging.AppLogger
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -172,6 +175,7 @@ class ExportProcessWorker(
         var videosFixed = 0
         var overlaysMerged = 0
         var failedCount = 0
+        val failureLogList = mutableListOf<String>()
 
         for (item in list) {
             if (isStopped) {
@@ -296,12 +300,16 @@ class ExportProcessWorker(
                     }
                 }
             } catch (e: Exception) {
-                AppLogger.e(TAG, "Failed to restore ZIP item: $fileName: ${e.message}", e)
+                AppLogger.e(TAG, "Failed to restore folder item: $fileName: ${e.message}", e)
+                failureLogList.add("$fileName: ${e.message ?: "Exception occurred"}")
                 e.printStackTrace()
             }
 
             if (!itemFixed) {
                 failedCount++
+                if (!failureLogList.any { it.startsWith(fileName) }) {
+                    failureLogList.add("$fileName: Metadata write unconfirmed")
+                }
             }
 
             // Update Progress in WorkManager live with accurate fixed counts
@@ -318,6 +326,25 @@ class ExportProcessWorker(
         }
 
         val totalFixed = photosFixed + videosFixed
+
+        val manifest = buildString {
+            appendLine("EXPORT RUN MANIFEST (FOLDER EXPORT)")
+            appendLine("Timestamp: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}")
+            appendLine("Total Files Scanned: ${rawList.size}")
+            appendLine("Processed in Run: $total")
+            appendLine("Photos Fixed: $photosFixed")
+            appendLine("Videos Fixed: $videosFixed")
+            appendLine("Overlays Merged: $overlaysMerged")
+            appendLine("Failed Count: $failedCount")
+            appendLine("Settings: embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideoOverlays=$burnVideoOverlays, mergeVideoChunks=$mergeVideoChunks, maxMediaLimit=$maxMediaLimit")
+            if (failureLogList.isNotEmpty()) {
+                appendLine("\n--- FAILED FILES (${failureLogList.size}) ---")
+                failureLogList.forEach { appendLine("• $it") }
+            } else {
+                appendLine("\nStatus: All files restored successfully with 0 errors.")
+            }
+        }
+        AppLogger.recordRunManifest(context, manifest)
 
         // Final completion notification
         val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -417,6 +444,7 @@ class ExportProcessWorker(
         var videosFixed = 0
         var overlaysMerged = 0
         var failedCount = 0
+        val failureLogList = mutableListOf<String>()
 
         // Extract media and overlays in a single stream pass
         for (zipUri in zipUris) {
@@ -799,6 +827,28 @@ class ExportProcessWorker(
         )
 
         val totalFixed = photosFixed + videosFixed
+        failedCount = (total - totalFixed).coerceAtLeast(0)
+
+        val manifest = buildString {
+            appendLine("EXPORT RUN MANIFEST (ZIP EXPORT)")
+            appendLine("Timestamp: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}")
+            appendLine("Total Files Scanned: ${rawList.size}")
+            appendLine("Processed in Run: $total")
+            appendLine("Photos Fixed: $photosFixed")
+            appendLine("Videos Fixed: $videosFixed")
+            appendLine("Overlays Merged: $overlaysMerged")
+            appendLine("Failed Count: $failedCount")
+            appendLine("Settings: embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideoOverlays=$burnVideoOverlays, mergeVideoChunks=$mergeVideoChunks, maxMediaLimit=$maxMediaLimit")
+            if (failureLogList.isNotEmpty()) {
+                appendLine("\n--- FAILED FILES (${failureLogList.size}) ---")
+                failureLogList.forEach { appendLine("• $it") }
+            } else if (failedCount > 0) {
+                appendLine("\n--- $failedCount files were skipped or could not be verified in target gallery ---")
+            } else {
+                appendLine("\nStatus: All files restored successfully with 0 errors.")
+            }
+        }
+        AppLogger.recordRunManifest(context, manifest)
 
         val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

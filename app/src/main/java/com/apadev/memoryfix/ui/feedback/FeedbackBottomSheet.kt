@@ -110,6 +110,11 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
         bodyBuilder.append(AppLogger.getSystemReport(requireContext())).append("\n")
         bodyBuilder.append("========================================\n")
 
+        val latestManifest = AppLogger.getLatestManifest(requireContext())
+        if (!latestManifest.isNullOrBlank()) {
+            bodyBuilder.append("\n").append(latestManifest).append("\n")
+        }
+
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "message/rfc822"
             putExtra(Intent.EXTRA_EMAIL, arrayOf(SUPPORT_EMAIL))
