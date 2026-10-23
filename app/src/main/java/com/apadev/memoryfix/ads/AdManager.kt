@@ -124,11 +124,13 @@ object AdManager {
         onDismissed: () -> Unit
     ) {
         val currentAd = rewardedAd
-        if (currentAd == null) {
-            // If ad not ready, grant reward so user is never blocked
+        if (currentAd == null || com.apadev.memoryfix.BuildConfig.DEBUG) {
+            // In debug mode or if ad not yet cached, grant reward so testing / user is never blocked
             loadRewarded(activity)
-            onRewardEarned()
-            onDismissed()
+            activity.runOnUiThread {
+                onRewardEarned()
+                onDismissed()
+            }
             return
         }
 
@@ -138,18 +140,22 @@ object AdManager {
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
                 loadRewarded(activity)
-                if (rewardGranted) {
-                    onRewardEarned()
+                activity.runOnUiThread {
+                    if (rewardGranted) {
+                        onRewardEarned()
+                    }
+                    onDismissed()
                 }
-                onDismissed()
             }
 
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
                 rewardedAd = null
                 loadRewarded(activity)
-                // If failed to show, grant reward gracefully
-                onRewardEarned()
-                onDismissed()
+                activity.runOnUiThread {
+                    // Fallback: grant reward gracefully if ad failed to display
+                    onRewardEarned()
+                    onDismissed()
+                }
             }
         }
 

@@ -166,9 +166,11 @@ class AnalysisFragment : Fragment() {
                                 binding.badgeRewardGps.text = "UNLOCKED ✓"
                                 binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
                                 binding.switchEmbedLocation.isChecked = true
+                                android.widget.Toast.makeText(context, "✓ Smart GPS Geotagging Unlocked!", android.widget.Toast.LENGTH_SHORT).show()
                             }, onDismissed = {
                                 if (!isGpsUnlockedViaAd) {
                                     binding.switchEmbedLocation.isChecked = false
+                                    android.widget.Toast.makeText(context, "Sponsor ad required to unlock. Feature remains locked.", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             })
                         },
@@ -195,9 +197,11 @@ class AnalysisFragment : Fragment() {
                                 binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
                                 binding.switchSkipDuplicates.isChecked = true
                                 scanResult?.stats?.let { updateHeroStats(it) }
+                                android.widget.Toast.makeText(context, "✓ Duplicate Cleaner Unlocked!", android.widget.Toast.LENGTH_SHORT).show()
                             }, onDismissed = {
                                 if (!isDuplicatesUnlockedViaAd) {
                                     binding.switchSkipDuplicates.isChecked = false
+                                    android.widget.Toast.makeText(context, "Sponsor ad required to unlock. Feature remains locked.", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                                 scanResult?.stats?.let { updateHeroStats(it) }
                             })
@@ -269,16 +273,16 @@ class AnalysisFragment : Fragment() {
             val stats = scanResult?.stats
             if (stats != null && stats.totalMediaFiles > FREE_TIER_LIMIT) {
                 binding.cardLargeArchiveBanner.visibility = View.VISIBLE
+            } else {
+                binding.cardLargeArchiveBanner.visibility = View.GONE
             }
             binding.badgeRewardGps.visibility = View.VISIBLE
             binding.badgeRewardDuplicates.visibility = View.VISIBLE
 
-            binding.switchEmbedLocation.isChecked = isGpsUnlockedViaAd
-            binding.switchSkipDuplicates.isChecked = isDuplicatesUnlockedViaAd
-
             if (isGpsUnlockedViaAd) {
                 binding.badgeRewardGps.text = "UNLOCKED ✓"
                 binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                binding.switchEmbedLocation.isChecked = true
             } else {
                 binding.badgeRewardGps.text = "PRO / 🎬 AD"
                 binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))
@@ -287,6 +291,7 @@ class AnalysisFragment : Fragment() {
             if (isDuplicatesUnlockedViaAd) {
                 binding.badgeRewardDuplicates.text = "UNLOCKED ✓"
                 binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                binding.switchSkipDuplicates.isChecked = true
             } else {
                 binding.badgeRewardDuplicates.text = "PRO / 🎬 AD"
                 binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))

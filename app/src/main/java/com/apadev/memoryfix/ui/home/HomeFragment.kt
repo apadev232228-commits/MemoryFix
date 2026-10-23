@@ -14,11 +14,13 @@ import com.apadev.memoryfix.MemoryFixApp
 import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentHomeBinding
 
+import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.lifecycle.lifecycleScope
 import com.apadev.memoryfix.data.ZipMetadataReader
 import com.apadev.memoryfix.ui.pro.ProUpgradeBottomSheet
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -128,6 +130,21 @@ class HomeFragment : Fragment() {
         binding.btnFeedbackSupport.setOnClickListener {
             com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.newInstance()
                 .show(parentFragmentManager, com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.TAG)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val app = activity?.application as? MemoryFixApp
+            app?.billingManager?.isPro?.collectLatest { isPro ->
+                if (_binding != null) {
+                    if (isPro) {
+                        binding.tvProButton.text = "👑 PRO"
+                        binding.tvProButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                    } else {
+                        binding.tvProButton.text = "👑 UPGRADE"
+                        binding.tvProButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))
+                    }
+                }
+            }
         }
     }
 

@@ -48,9 +48,14 @@ class ProUpgradeBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnRestorePurchase.setOnClickListener {
-            billingManager?.startConnection {
-                activity?.runOnUiThread {
-                    Toast.makeText(context, "Purchases refreshed", Toast.LENGTH_SHORT).show()
+            if (com.apadev.memoryfix.BuildConfig.DEBUG) {
+                billingManager?.setProStatus(true)
+                Toast.makeText(context, "Lifetime Pro Restored (Debug Mode) ✓", Toast.LENGTH_SHORT).show()
+            } else {
+                billingManager?.startConnection {
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Purchases refreshed", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -58,6 +63,7 @@ class ProUpgradeBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             billingManager?.isPro?.collectLatest { isPro ->
                 if (isPro) {
+                    Toast.makeText(context, "🎉 Welcome to Lifetime Pro!", Toast.LENGTH_SHORT).show()
                     dismiss()
                 }
             }

@@ -59,7 +59,9 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                         }
                     }
                 }
-                setProStatus(hasPro)
+                if (!com.apadev.memoryfix.BuildConfig.DEBUG || hasPro) {
+                    setProStatus(hasPro)
+                }
             }
         }
     }
@@ -120,6 +122,23 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
                         )
                         .build()
                     billingClient.launchBillingFlow(activity, flowParams)
+                } else {
+                    activity.runOnUiThread {
+                        if (com.apadev.memoryfix.BuildConfig.DEBUG) {
+                            setProStatus(true)
+                            android.widget.Toast.makeText(
+                                activity,
+                                "Lifetime Pro Unlocked (Debug / Test Mode) ✓",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            android.widget.Toast.makeText(
+                                activity,
+                                "Google Play Store is currently unreachable. Please check connection.",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 }
             }
         }
@@ -140,7 +159,7 @@ class BillingManager(private val context: Context) : PurchasesUpdatedListener {
         return productDetailsMap[PRODUCT_ID_PRO]?.oneTimePurchaseOfferDetails?.formattedPrice ?: "$4.99"
     }
 
-    private fun setProStatus(isPro: Boolean) {
+    fun setProStatus(isPro: Boolean) {
         prefs.edit().putBoolean(KEY_IS_PRO, isPro).apply()
         _isPro.value = isPro
     }

@@ -91,11 +91,12 @@
                     android:paddingHorizontal="10dp">
 
                     <TextView
+                        android:id="@+id/tvProButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:includeFontPadding="false"
-                        android:text="👑 PRO"
+                        android:text="👑 UPGRADE"
                         android:textColor="@color/pro_gold"
                         android:textSize="11sp"
                         android:textStyle="bold" />
