@@ -133,10 +133,31 @@ class HomeFragment : Fragment() {
     private fun showFeaturesBottomSheet() {
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
         val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_features, null)
-        sheetView.findViewById<View>(R.id.btnDismissFeatures).setOnClickListener {
+
+        sheetView.findViewById<View>(R.id.btnDismissFeatures)?.setOnClickListener {
             dialog.dismiss()
         }
+        sheetView.findViewById<View>(R.id.btnCloseFeaturesTop)?.setOnClickListener {
+            dialog.dismiss()
+        }
+
         dialog.setContentView(sheetView)
+
+        dialog.setOnShowListener {
+            val bottomSheet = dialog.findViewById<android.widget.FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+            if (bottomSheet != null) {
+                val displayMetrics = resources.displayMetrics
+                val targetHeight = (displayMetrics.heightPixels * 0.85).toInt()
+                bottomSheet.layoutParams.height = targetHeight
+                bottomSheet.requestLayout()
+
+                val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(bottomSheet)
+                behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+                behavior.peekHeight = targetHeight
+            }
+        }
+
         dialog.show()
     }
 
