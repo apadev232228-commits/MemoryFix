@@ -103,7 +103,8 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
                 "MemoryFix operates zero cloud storage or processing servers.\n\n" +
                 "📊 Diagnostics\n" +
                 "Error logs and device telemetry are only shared if you explicitly choose to attach them when emailing feedback.\n\n" +
-                "Support: apadev232228@gmail.com"
+                "⚖️ Trademark Disclaimer\n" +
+                "MemoryFix is an independent utility and is not affiliated with, sponsored by, or endorsed by Snap Inc. (Snapchat) or Google LLC (Google Photos). 'Snapchat' is a registered trademark of Snap Inc. 'Google Photos' is a registered trademark of Google LLC."
             )
             .setPositiveButton("Got It", null)
             .show()

@@ -46,6 +46,15 @@ MemoryFix does not knowingly collect any personal information from children unde
 
 ---
 
-### 6. Contact Us
+### 6. Disclaimer & Trademark Notice
+MemoryFix is an independent utility created to assist users in repairing and preserving their own exported personal media data. MemoryFix is not affiliated with, sponsored by, or endorsed by Snap Inc. (Snapchat) or Google LLC (Google Photos).
+- "Snapchat" and "Snap" are registered trademarks of Snap Inc.
+- "Google Photos" is a registered trademark of Google LLC.
+- "Apple Photos" is a registered trademark of Apple Inc.
+
+---
+
+### 7. Contact Us
 If you have any questions or concerns regarding this Privacy Policy, please contact our developer support:
 - **Email:** apadev232228@gmail.com
+
