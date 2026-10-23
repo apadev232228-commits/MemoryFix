@@ -434,38 +434,43 @@ class AnalysisFragment : Fragment() {
         val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
         updateProUi(isPro)
 
-        // Automatic Highlights
+        // Automatic Highlights & Group Visibility
         if (s.overlayCount > 0) {
             binding.layoutHighlightOverlays.visibility = View.VISIBLE
             binding.tvHighlightOverlays.text = "${numberFormat.format(s.overlayCount)} stickers & captions will be combined onto photos"
+            binding.groupStickersAndOverlays.visibility = View.VISIBLE
             binding.cardOverlays.visibility = View.VISIBLE
             binding.tvOverlayTitle.text = "Combine Photo Overlays (${numberFormat.format(s.photoOverlayCount)})"
             if (s.videoOverlayCount > 0) {
+                binding.dividerVideoOverlay.visibility = View.VISIBLE
                 binding.layoutVideoOverlayOption.visibility = View.VISIBLE
                 binding.tvVideoOverlayDesc.text = "Re-encodes ${s.videoOverlayCount} videos to bake stickers into frames (~15s/video)"
             } else {
+                binding.dividerVideoOverlay.visibility = View.GONE
                 binding.layoutVideoOverlayOption.visibility = View.GONE
             }
         } else {
             binding.layoutHighlightOverlays.visibility = View.GONE
-            binding.cardOverlays.visibility = View.GONE
-            binding.layoutVideoOverlayOption.visibility = View.GONE
+            binding.groupStickersAndOverlays.visibility = View.GONE
         }
 
         if (s.videoChunkGroupsCount > 0) {
             binding.layoutHighlightVideoChunks.visibility = View.VISIBLE
             binding.tvHighlightVideoChunks.text = "${s.videoChunkGroupsCount} multi-part recordings will be stitched in order"
+            binding.groupVideoChunks.visibility = View.VISIBLE
             binding.layoutMergeVideoChunksOption.visibility = View.VISIBLE
             binding.tvMergeVideoChunksTitle.text = "Stitch ${s.videoChunkGroupsCount} Multi-Part Videos"
         } else {
             binding.layoutHighlightVideoChunks.visibility = View.GONE
-            binding.layoutMergeVideoChunksOption.visibility = View.GONE
+            binding.groupVideoChunks.visibility = View.GONE
         }
 
         if (s.duplicateCount > 0) {
+            binding.dividerDuplicates.visibility = View.VISIBLE
             binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
             binding.tvSkipDuplicatesDesc.text = "${numberFormat.format(s.duplicateCount)} duplicate memories found — tap to clean and keep only 1 copy"
         } else {
+            binding.dividerDuplicates.visibility = View.GONE
             binding.layoutSkipDuplicatesOption.visibility = View.GONE
         }
 

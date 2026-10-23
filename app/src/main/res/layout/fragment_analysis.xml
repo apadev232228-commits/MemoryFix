@@ -490,7 +490,7 @@
                     android:layout_height="wrap_content"
                     android:text="Restoration Options"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -501,14 +501,23 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
 
-                <!-- ==================== 1. PAID / PRO OPTIONS (FIRST) ==================== -->
+                <!-- ==================== 1. PRO ENHANCEMENTS (PAID FIRST) ==================== -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="PRO ENHANCEMENTS"
+                    android:textColor="@color/pro_gold"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.05"
+                    android:textStyle="bold" />
 
                 <!-- Paid Option 1: Embed GPS Locations -->
                 <RelativeLayout
                     android:id="@+id/layoutEmbedLocationOption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp">
+                    android:layout_marginTop="12dp">
 
                     <FrameLayout
                         android:id="@+id/iconContainerLocation"
@@ -566,7 +575,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="Adds geotags &amp; smart nearby location tags (within 30m)"
+                            android:text="Adds original geotags &amp; nearby location tags (within 30m)"
                             android:textColor="@color/text_secondary"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -581,6 +590,7 @@
                 </RelativeLayout>
 
                 <View
+                    android:id="@+id/dividerDuplicates"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="12dp"
@@ -664,49 +674,58 @@
                         android:checked="false" />
                 </RelativeLayout>
 
-                <View
+                <!-- ==================== 2. STICKERS & CAPTIONS ==================== -->
+                <LinearLayout
+                    android:id="@+id/groupStickersAndOverlays"
                     android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
-                    android:background="@color/surface_border" />
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                <!-- ==================== 2. FREE OPTIONS (FOLLOWED IN-LINE) ==================== -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:background="@color/surface_border" />
 
-                <!-- Free Option 1: Merge Photo Overlays -->
-                <RelativeLayout
-                    android:id="@+id/cardOverlays"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="STICKERS &amp; CAPTIONS"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.05"
+                        android:textStyle="bold" />
 
-                    <FrameLayout
-                        android:id="@+id/iconContainerOverlays"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/bg_card"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/ic_layers"
-                            app:tint="@color/photo_purple" />
-                    </FrameLayout>
-
-                    <LinearLayout
+                    <!-- Option: Combine Photo Overlays -->
+                    <RelativeLayout
+                        android:id="@+id/cardOverlays"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="12dp"
-                        android:layout_toStartOf="@+id/switchOverlay"
-                        android:layout_toEndOf="@id/iconContainerOverlays"
-                        android:orientation="vertical">
+                        android:layout_marginTop="12dp">
+
+                        <FrameLayout
+                            android:id="@+id/iconContainerOverlays"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/bg_card"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_layers"
+                                app:tint="@color/photo_purple" />
+                        </FrameLayout>
 
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_centerVertical="true"
+                            android:layout_marginStart="12dp"
+                            android:layout_toStartOf="@+id/switchOverlay"
+                            android:layout_toEndOf="@id/iconContainerOverlays"
+                            android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tvOverlayTitle"
@@ -718,78 +737,141 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvOverlaySubtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_pill_after"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="1dp"
-                                android:text="FREE"
-                                android:textColor="@color/accent"
-                                android:textSize="9sp"
-                                android:textStyle="bold" />
+                                android:layout_marginTop="1dp"
+                                android:text="Bakes stickers, text &amp; filters directly into photos"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/tvOverlaySubtitle"
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchOverlay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="Bakes stickers, text &amp; filters directly into photos"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:checked="true" />
+                    </RelativeLayout>
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchOverlay"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:checked="true" />
-                </RelativeLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
-                    android:background="@color/surface_border" />
-
-                <!-- Free Option 2: Stitch Multi-Part Videos -->
-                <RelativeLayout
-                    android:id="@+id/layoutMergeVideoChunksOption"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <FrameLayout
-                        android:id="@+id/iconContainerVideoChunks"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/bg_card"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/ic_videocam"
-                            app:tint="@color/video_blue" />
-                    </FrameLayout>
-
-                    <LinearLayout
+                    <!-- Option: Bake Stickers into Videos (Slow, Optional) -->
+                    <View
+                        android:id="@+id/dividerVideoOverlay"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="12dp"
-                        android:layout_toStartOf="@+id/switchMergeVideoChunks"
-                        android:layout_toEndOf="@id/iconContainerVideoChunks"
-                        android:orientation="vertical">
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/surface_border" />
+
+                    <RelativeLayout
+                        android:id="@+id/layoutVideoOverlayOption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <FrameLayout
+                            android:id="@+id/iconContainerVideoOverlay"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/bg_card"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_auto_fix"
+                                app:tint="@color/text_secondary" />
+                        </FrameLayout>
 
                         <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_centerVertical="true"
+                            android:layout_marginStart="12dp"
+                            android:layout_toStartOf="@+id/switchVideoOverlay"
+                            android:layout_toEndOf="@id/iconContainerVideoOverlay"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bake Stickers into Videos (Slow)"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvVideoOverlayDesc"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:text="Re-encodes video frames (~15s/video). Keep off for original quality."
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchVideoOverlay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:checked="false" />
+                    </RelativeLayout>
+                </LinearLayout>
+
+                <!-- ==================== 3. VIDEO RECORDINGS ==================== -->
+                <LinearLayout
+                    android:id="@+id/groupVideoChunks"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:background="@color/surface_border" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="VIDEO RECORDINGS"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.05"
+                        android:textStyle="bold" />
+
+                    <!-- Option: Stitch Multi-Part Videos -->
+                    <RelativeLayout
+                        android:id="@+id/layoutMergeVideoChunksOption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp">
+
+                        <FrameLayout
+                            android:id="@+id/iconContainerVideoChunks"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/bg_card"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_videocam"
+                                app:tint="@color/video_blue" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_centerVertical="true"
+                            android:layout_marginStart="12dp"
+                            android:layout_toStartOf="@+id/switchMergeVideoChunks"
+                            android:layout_toEndOf="@id/iconContainerVideoChunks"
+                            android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tvMergeVideoChunksTitle"
@@ -801,165 +883,108 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvMergeVideoChunksDesc"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_pill_after"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="1dp"
-                                android:text="FREE"
-                                android:textColor="@color/accent"
-                                android:textSize="9sp"
-                                android:textStyle="bold" />
+                                android:layout_marginTop="1dp"
+                                android:text="Merges split 10s recording clips into continuous stories"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/tvMergeVideoChunksDesc"
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchMergeVideoChunks"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="Merges split 10s recording clips into continuous stories"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:checked="true" />
+                    </RelativeLayout>
+                </LinearLayout>
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchMergeVideoChunks"
+                <!-- ==================== 4. TIME & TIMEZONE (LAST) ==================== -->
+                <LinearLayout
+                    android:id="@+id/groupTimezone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="14dp"
+                        android:background="@color/surface_border" />
+
+                    <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:checked="true" />
-                </RelativeLayout>
+                        android:text="TIMEZONE"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.05"
+                        android:textStyle="bold" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
-                    android:background="@color/surface_border" />
-
-                <!-- Free Option 3: Target Timezone -->
-                <RelativeLayout
-                    android:id="@+id/layoutTargetTimezoneOption"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <FrameLayout
-                        android:id="@+id/iconContainerTimezone"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/bg_card"
-                        android:padding="8dp">
-
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/ic_calendar_clock"
-                            app:tint="@color/text_secondary" />
-                    </FrameLayout>
-
-                    <LinearLayout
+                    <!-- Option: Target Timezone -->
+                    <RelativeLayout
+                        android:id="@+id/layoutTargetTimezoneOption"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="12dp"
-                        android:layout_toStartOf="@+id/btnChangeTimezone"
-                        android:layout_toEndOf="@id/iconContainerTimezone"
-                        android:orientation="vertical">
+                        android:layout_marginTop="12dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Target Timezone"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
+                        <FrameLayout
+                            android:id="@+id/iconContainerTimezone"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/bg_card"
+                            android:padding="8dp">
 
-                        <TextView
-                            android:id="@+id/tvCurrentTimezone"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="UTC"
-                            android:textColor="@color/accent"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/ic_calendar_clock"
+                                app:tint="@color/text_secondary" />
+                        </FrameLayout>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChangeTimezone"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:text="Change"
-                        android:textSize="12sp"
-                        app:cornerRadius="18dp" />
-                </RelativeLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
-                    android:background="@color/surface_border" />
-
-                <!-- Free Option 4: Bake Stickers into Videos (Slow, Optional) -->
-                <RelativeLayout
-                    android:id="@+id/layoutVideoOverlayOption"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <FrameLayout
-                        android:id="@+id/iconContainerVideoOverlay"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/bg_card"
-                        android:padding="8dp">
-
-                        <ImageView
+                        <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/ic_auto_fix"
-                            app:tint="@color/text_secondary" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="12dp"
-                        android:layout_toStartOf="@+id/switchVideoOverlay"
-                        android:layout_toEndOf="@id/iconContainerVideoOverlay"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bake Stickers into Videos (Slow)"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
+                            android:layout_centerVertical="true"
+                            android:layout_marginStart="12dp"
+                            android:layout_toStartOf="@+id/btnChangeTimezone"
+                            android:layout_toEndOf="@id/iconContainerTimezone"
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/tvVideoOverlayDesc"
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Target Timezone"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvCurrentTimezone"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:text="UTC"
+                                android:textColor="@color/accent"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnChangeTimezone"
+                            style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="Re-encodes video frames (~15s/video). Keep off for original quality."
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchVideoOverlay"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:checked="false" />
-                </RelativeLayout>
+                            android:layout_height="36dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:text="Change"
+                            android:textSize="12sp"
+                            app:cornerRadius="18dp" />
+                    </RelativeLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Primary Call to Action Button -->
