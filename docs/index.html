@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - MemoryFix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #0D1017;
+            --surface-card: #151922;
+            --surface-border: #232938;
+            --primary: #7C4DFF;
+            --primary-glow: rgba(124, 77, 255, 0.2);
+            --accent: #00E676;
+            --text-primary: #F0F4F8;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --card-radius: 16px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-page: #F8FAFC;
+                --surface-card: #FFFFFF;
+                --surface-border: #E2E8F0;
+                --primary: #6D28D9;
+                --primary-glow: rgba(109, 40, 217, 0.12);
+                --accent: #059669;
+                --text-primary: #0F172A;
+                --text-secondary: #475569;
+                --text-muted: #94A3B8;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            line-height: 1.65;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(124, 77, 255, 0.08), rgba(0, 230, 118, 0.06));
+            border: 1px solid var(--primary);
+            border-radius: var(--card-radius);
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .highlight-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .highlight-text h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .highlight-text p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .card {
+            background-color: var(--surface-card);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--card-radius);
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        h2 {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            margin-bottom: 12px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0;
+        }
+
+        li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 8px;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 1;
+            top: 0;
+        }
+
+        strong {
+            color: var(--text-primary);
+        }
+
+        .disclaimer-box {
+            background: rgba(255, 179, 0, 0.08);
+            border: 1px solid rgba(255, 179, 0, 0.3);
+            border-radius: var(--card-radius);
+            padding: 20px 24px;
+            margin-top: 32px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .disclaimer-box strong {
+            color: #FFB300;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="badge">Official Privacy Policy</div>
+        <h1>Privacy Policy for MemoryFix</h1>
+        <p class="subtitle">Last Updated: October 2026 • Effective Date: October 2026</p>
+    </header>
+
+    <div class="highlight-box">
+        <div class="highlight-icon">🔒</div>
+        <div class="highlight-text">
+            <h3>100% Offline &amp; On-Device Processing</h3>
+            <p>Your photos, videos, and Snapchat archive files <strong>never leave your device</strong>. MemoryFix operates <strong>no cloud servers</strong> and cannot access, upload, or view your personal memories.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>1. Data We Do Not Collect</h2>
+        <p>MemoryFix is built with privacy-first principles. We do not collect, transmit, sell, or store your personal media:</p>
+        <ul>
+            <li><strong>Photos &amp; Videos:</strong> Read directly from your chosen export archive and saved to your device's photo gallery (<code>Pictures/Snapchat Memories</code>). Never transmitted anywhere.</li>
+            <li><strong>Timestamps &amp; GPS Metadata:</strong> Extracted strictly from local JSON indexes on your phone to update EXIF tags.</li>
+            <li><strong>Personal Information:</strong> No account creation, login, name, phone number, or email registration is required.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>2. Permissions Requested &amp; Their Purpose</h2>
+        <p>MemoryFix only requests essential permissions necessary to perform user-initiated file restoration:</p>
+        <ul>
+            <li><strong>Storage (Storage Access Framework):</strong> Allows you to select your Snapchat data ZIP or folder and write restored files to your local photo gallery. No broad external storage access is requested.</li>
+            <li><strong>Foreground Service (Data Sync):</strong> Keeps restoration active in the background when processing large archives so Android does not interrupt the process when you switch apps or turn off your screen.</li>
+            <li><strong>Notifications:</strong> Shows real-time progress while fixing your archive and notifies you when the restoration completes.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>3. Diagnostics &amp; Feedback</h2>
+        <p>If you encounter an issue and choose to contact developer support via the in-app "Feedback &amp; Support" screen:</p>
+        <ul>
+            <li>You may optionally choose to attach a diagnostic summary.</li>
+            <li>This log includes device technical specifications (e.g., device model, Android OS version, storage available) and error lines to help troubleshoot why a file failed.</li>
+            <li><strong>Diagnostics are never uploaded automatically.</strong> They are only shared if you explicitly choose to attach them via your email client.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>4. Third-Party Services</h2>
+        <p>MemoryFix integrates with standard Google Play developer libraries to support app functionality:</p>
+        <ul>
+            <li><strong>Google Play Billing:</strong> Securely processes in-app Lifetime Pro purchases. We never see or store your payment details or credit cards.</li>
+            <li><strong>Google Mobile Ads (AdMob):</strong> Serves non-intrusive ads to free users. AdMob may collect device identifiers in accordance with Google's Advertising Privacy Policy.</li>
+            <li><strong>Google Play Core:</strong> Checks for official app updates and facilitates Google Play store reviews.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>5. Children's Privacy</h2>
+        <p>MemoryFix does not knowingly collect or solicit personal data from children under the age of 13. All file operations occur strictly offline on the user's local hardware.</p>
+    </div>
+
+    <div class="card">
+        <h2>6. Contact Developer Support</h2>
+        <p>If you have any questions or concerns regarding this Privacy Policy or your data privacy, please contact:</p>
+        <p><strong>Developer Support:</strong> <a href="mailto:apadev232228@gmail.com" style="color: var(--primary);">apadev232228@gmail.com</a></p>
+    </div>
+
+    <div class="disclaimer-box">
+        <strong>⚖️ Disclaimer &amp; Trademark Notice</strong>
+        MemoryFix is an independent utility created to assist users in repairing and preserving their own exported personal media data. MemoryFix is not affiliated with, sponsored by, or endorsed by Snap Inc. (Snapchat) or Google LLC (Google Photos).
+        <br><br>
+        • "Snapchat" and "Snap" are registered trademarks of Snap Inc.<br>
+        • "Google Photos" is a registered trademark of Google LLC.<br>
+        • "Apple Photos" is a registered trademark of Apple Inc.
+    </div>
+
+    <footer>
+        <p>&copy; 2026 MemoryFix. All rights reserved.</p>
+        <p style="margin-top: 4px;">Designed for Google Play Compliance &amp; User Privacy</p>
+    </footer>
+</div>
+
+</body>
+</html>
