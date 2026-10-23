@@ -418,16 +418,292 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Clean Collapsible Accordion: Advanced Options -->
+            <!-- Primary User-Facing Restoration Options Card -->
+            <LinearLayout
+                android:id="@+id/cardRestorationOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_card_elevated"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Restoration Options"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Select the enhancements you want applied to your export"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <!-- Control 1: Embed GPS Locations -->
+                <RelativeLayout
+                    android:id="@+id/layoutEmbedLocationOption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp">
+
+                    <FrameLayout
+                        android:id="@+id/iconContainerLocation"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_card"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_location_on"
+                            app:tint="@color/accent" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="12dp"
+                        android:layout_toStartOf="@+id/switchEmbedLocation"
+                        android:layout_toEndOf="@id/iconContainerLocation"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Embed GPS Locations"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="Adds geotags &amp; smart nearby location tags (within 30m)"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchEmbedLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:checked="true" />
+                </RelativeLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="@color/surface_border" />
+
+                <!-- Control 2: Merge Photo Overlays -->
+                <RelativeLayout
+                    android:id="@+id/cardOverlays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <FrameLayout
+                        android:id="@+id/iconContainerOverlays"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_card"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_layers"
+                            app:tint="@color/photo_purple" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="12dp"
+                        android:layout_toStartOf="@+id/switchOverlay"
+                        android:layout_toEndOf="@id/iconContainerOverlays"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvOverlayTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Combine Photo Overlays"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvOverlaySubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="Bakes stickers, text &amp; filters directly into photos"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchOverlay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:checked="true" />
+                </RelativeLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="@color/surface_border" />
+
+                <!-- Control 3: Stitch Multi-Part Videos -->
+                <RelativeLayout
+                    android:id="@+id/layoutMergeVideoChunksOption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <FrameLayout
+                        android:id="@+id/iconContainerVideoChunks"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_card"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_videocam"
+                            app:tint="@color/video_blue" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="12dp"
+                        android:layout_toStartOf="@+id/switchMergeVideoChunks"
+                        android:layout_toEndOf="@id/iconContainerVideoChunks"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvMergeVideoChunksTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Stitch Multi-Part Videos"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMergeVideoChunksDesc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="Merges split 10s recording clips into continuous stories"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchMergeVideoChunks"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:checked="true" />
+                </RelativeLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="@color/surface_border" />
+
+                <!-- Control 4: Skip Duplicate Memories -->
+                <RelativeLayout
+                    android:id="@+id/layoutSkipDuplicatesOption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <FrameLayout
+                        android:id="@+id/iconContainerDuplicates"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_card"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_shield_check"
+                            app:tint="@color/amber" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="12dp"
+                        android:layout_toStartOf="@+id/switchSkipDuplicates"
+                        android:layout_toEndOf="@id/iconContainerDuplicates"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvSkipDuplicatesTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Clean Duplicate Memories"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSkipDuplicatesDesc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="Keeps 1 highest quality copy of identical re-saved memories"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchSkipDuplicates"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:checked="true" />
+                </RelativeLayout>
+            </LinearLayout>
+
+            <!-- Collapsible Accordion: Advanced Settings (Timezone & Slow Video Re-encoding) -->
             <LinearLayout
                 android:id="@+id/cardSettingsAccordion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical">
 
-                <!-- Accordion Header (Click to Expand / Collapse) -->
+                <!-- Accordion Header -->
                 <LinearLayout
                     android:id="@+id/layoutSettingsHeader"
                     android:layout_width="match_parent"
@@ -454,7 +730,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Advanced Options"
+                            android:text="Advanced Settings"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -463,7 +739,7 @@
                             android:id="@+id/tvSettingsSummary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Timezone, Overlays, Video Stitching"
+                            android:text="Timezone override &amp; slow video sticker baking"
                             android:textColor="@color/text_secondary"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -532,92 +808,17 @@
                             app:cornerRadius="18dp" />
                     </LinearLayout>
 
-                    <!-- Toggle: Merge Photo Overlays -->
-                    <RelativeLayout
-                        android:id="@+id/cardOverlays"
+                    <View
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp">
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/surface_border" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_toStartOf="@+id/switchOverlay"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tvOverlayTitle"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Merge Photo Overlays"
-                                android:textColor="@color/text_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvOverlaySubtitle"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Combines stickers &amp; captions into photo files"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchOverlay"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:checked="true" />
-                    </RelativeLayout>
-
-                    <!-- Toggle: Stitch Multi-Part Videos -->
-                    <RelativeLayout
-                        android:id="@+id/layoutMergeVideoChunksOption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_toStartOf="@+id/switchMergeVideoChunks"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tvMergeVideoChunksTitle"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Stitch Multi-Part Videos"
-                                android:textColor="@color/text_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvMergeVideoChunksDesc"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Merges consecutive 10s clips into single continuous videos"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchMergeVideoChunks"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:checked="true" />
-                    </RelativeLayout>
-
-                    <!-- Toggle: Bake Stickers into Videos -->
+                    <!-- Toggle: Bake Stickers into Videos (Slow) -->
                     <RelativeLayout
                         android:id="@+id/layoutVideoOverlayOption"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp">
+                        android:layout_height="wrap_content">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -637,7 +838,7 @@
                                 android:id="@+id/tvVideoOverlayDesc"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Re-encodes videos to embed sticker frames (~15s/video)"
+                                android:text="Re-encodes video frames (~15s/video). Keep off for original quality."
                                 android:textColor="@color/text_secondary"
                                 android:textSize="11sp" />
                         </LinearLayout>
@@ -649,46 +850,6 @@
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:checked="false" />
-                    </RelativeLayout>
-
-                    <!-- Toggle: Skip Duplicate Memories -->
-                    <RelativeLayout
-                        android:id="@+id/layoutSkipDuplicatesOption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_toStartOf="@+id/switchSkipDuplicates"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tvSkipDuplicatesTitle"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Skip Duplicate Memories"
-                                android:textColor="@color/text_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvSkipDuplicatesDesc"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Keeps only 1 clean copy of identical re-saved memories"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchSkipDuplicates"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:checked="true" />
                     </RelativeLayout>
                 </LinearLayout>
             </LinearLayout>

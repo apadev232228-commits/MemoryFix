@@ -363,7 +363,7 @@ class AnalysisFragment : Fragment() {
         val isZipSource = !zipUris.isNullOrEmpty()
         if (folderUri == null && !isZipSource) return
 
-        val embedLocation = true
+        val embedLocation = binding.switchEmbedLocation.isChecked
         val mergeOverlays = binding.switchOverlay.isChecked
         val burnVideoOverlays = binding.switchVideoOverlay.isChecked
         val mergeVideoChunks = binding.switchMergeVideoChunks.isChecked
