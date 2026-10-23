@@ -25,8 +25,8 @@ object AttributionManager {
      * 3. Replace FORM_ENTRY_ID with your question's entry ID:
      *    e.g. "entry.123456789"
      */
-    var GOOGLE_FORM_URL: String = ""
-    var FORM_ENTRY_ID: String = ""
+    var GOOGLE_FORM_URL: String = "https://docs.google.com/forms/d/e/1FAIpQLSe-UKbrrfD1X0bgkq08otyc3zzNB0CK8gTE4lY5MFFYcVm9ww/formResponse"
+    var FORM_ENTRY_ID: String = "entry.1337043566"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -59,6 +59,8 @@ object AttributionManager {
                     conn.connectTimeout = 6000
                     conn.readTimeout = 6000
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36")
+                    conn.setRequestProperty("Accept", "*/*")
 
                     val postData = "$entryId=${URLEncoder.encode(answer, "UTF-8")}"
                     conn.outputStream.use { os ->
