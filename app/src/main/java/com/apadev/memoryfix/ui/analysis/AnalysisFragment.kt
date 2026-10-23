@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -160,6 +159,7 @@ class AnalysisFragment : Fragment() {
                     showFeatureUnlockDialog(
                         title = "Unlock Smart GPS Locations",
                         message = "Smart GPS geotagging (including 30-min surrounding location inference) is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                        iconRes = R.drawable.ic_location_on,
                         onUnlockViaAd = {
                             AdManager.showRewarded(requireActivity(), onRewardEarned = {
                                 isGpsUnlockedViaAd = true
@@ -187,6 +187,7 @@ class AnalysisFragment : Fragment() {
                     showFeatureUnlockDialog(
                         title = "Unlock Duplicate Cleaner",
                         message = "Smart duplicate cleaner is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                        iconRes = R.drawable.ic_shield_check,
                         onUnlockViaAd = {
                             AdManager.showRewarded(requireActivity(), onRewardEarned = {
                                 isDuplicatesUnlockedViaAd = true
@@ -216,9 +217,10 @@ class AnalysisFragment : Fragment() {
 
         binding.switchVideoOverlay.setOnClickListener {
             if (binding.switchVideoOverlay.isChecked) {
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Burn Stickers into Videos?")
-                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to original untouched videos.\n\nIf turned off, original videos are preserved at full speed and quality without overlay stickers.")
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Bake Stickers into Videos?")
+                    .setMessage("Baking stickers into videos requires frame-by-frame re-encoding:\n\n• Processing takes much longer (~10–20 seconds per video).\n• Uses significantly more battery and device storage.\n• Video compression quality may be slightly reduced compared to original untouched videos.\n\nIf turned off, original videos are preserved at full speed and 100% untouched quality without overlay stickers.")
+                    .setIcon(R.drawable.ic_videocam)
                     .setPositiveButton("Enable (Slower)") { _, _ -> }
                     .setNegativeButton("Keep Off (Recommended)") { _, _ ->
                         binding.switchVideoOverlay.isChecked = false
@@ -296,13 +298,14 @@ class AnalysisFragment : Fragment() {
     private fun showFeatureUnlockDialog(
         title: String,
         message: String,
+        iconRes: Int = R.drawable.ic_auto_fix,
         onUnlockViaAd: () -> Unit,
         onCancel: () -> Unit
     ) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(title)
             .setMessage(message)
-            .setIcon(R.drawable.ic_auto_fix)
+            .setIcon(iconRes)
             .setPositiveButton("🎬 Watch Ad to Unlock") { _, _ ->
                 onUnlockViaAd()
             }
@@ -501,9 +504,10 @@ class AnalysisFragment : Fragment() {
                 "Some files could not be matched with your Snapchat timeline. Their internal dates will be kept as-is."
         }
 
-        AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Proceed with Fix?")
             .setMessage(message)
+            .setIcon(R.drawable.ic_warning)
             .setPositiveButton("Start Fixing Anyway") { _, _ ->
                 startProcessing()
             }
@@ -512,32 +516,10 @@ class AnalysisFragment : Fragment() {
     }
 
     private fun showTimezoneDialog() {
-        val popularZones = listOf(
-            "UTC",
-            "America/New_York",
-            "America/Chicago",
-            "America/Denver",
-            "America/Los_Angeles",
-            "Europe/London",
-            "Europe/Paris",
-            "Europe/Berlin",
-            "Asia/Dubai",
-            "Asia/Kolkata",
-            "Asia/Singapore",
-            "Asia/Tokyo",
-            "Australia/Sydney",
-            TimeZone.getDefault().id
-        ).distinct()
-
-        val allZones = popularZones.toTypedArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle("Select Timezone")
-            .setItems(allZones) { _, which ->
-                selectedTimezone = allZones[which]
-                binding.tvCurrentTimezone.text = selectedTimezone
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        TimezoneBottomSheet.newInstance(selectedTimezone) { chosenTz ->
+            selectedTimezone = chosenTz
+            binding.tvCurrentTimezone.text = chosenTz
+        }.show(parentFragmentManager, TimezoneBottomSheet.TAG)
     }
 
     private fun startProcessing() {

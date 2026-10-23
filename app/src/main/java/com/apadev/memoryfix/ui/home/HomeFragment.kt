@@ -14,7 +14,7 @@ import com.apadev.memoryfix.MemoryFixApp
 import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentHomeBinding
 
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.lifecycle.lifecycleScope
 import com.apadev.memoryfix.data.ZipMetadataReader
 import com.apadev.memoryfix.ui.pro.ProUpgradeBottomSheet
@@ -59,9 +59,10 @@ class HomeFragment : Fragment() {
 
                     val anyValid = validationResults.any { it.isValid }
                     if (!anyValid) {
-                        AlertDialog.Builder(requireContext())
+                        MaterialAlertDialogBuilder(requireContext())
                             .setTitle("Not a Snapchat Export?")
                             .setMessage("The selected file doesn't seem to contain Snapchat memories (we couldn't find memories_history.json or Snapchat photos/videos).\n\nPlease verify you selected the official ZIP downloaded from Snapchat (typically named 'mydata~...zip').\n\nWould you like to try again, or proceed anyway?")
+                            .setIcon(R.drawable.ic_warning)
                             .setPositiveButton("Proceed Anyway") { _, _ ->
                                 (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
                             }
