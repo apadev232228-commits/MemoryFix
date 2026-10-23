@@ -176,7 +176,7 @@ class ResultFragment : Fragment() {
         }
 
         binding.btnRateApp.setOnClickListener {
-            requestInAppReview(isManual = true)
+            openPlayStoreDirectly()
         }
 
         // Automatic smart prompt with 1.5s delay so user first digests their success metrics
@@ -184,20 +184,19 @@ class ResultFragment : Fragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(1500)
                 if (_binding != null) {
-                    requestInAppReview(isManual = false)
+                    requestInAppReview()
                 }
             }
         }
     }
 
-    private fun requestInAppReview(isManual: Boolean) {
+    private fun requestInAppReview() {
         val prefs = requireContext().getSharedPreferences(PREFS_REVIEW, android.content.Context.MODE_PRIVATE)
         val lastRequested = prefs.getLong(KEY_LAST_REVIEW_TIME, 0L)
         val now = System.currentTimeMillis()
         val cooldownMs = 14L * 24 * 60 * 60 * 1000 // 14 days cooldown for automatic prompt
 
-        if (!isManual && (now - lastRequested < cooldownMs)) {
-            // Respect Google quota and user experience: don't auto-prompt if prompted recently
+        if (now - lastRequested < cooldownMs) {
             return
         }
 
@@ -212,23 +211,28 @@ class ResultFragment : Fragment() {
                             prefs.edit().putLong(KEY_LAST_REVIEW_TIME, now).apply()
                         }
                     }
-                } else if (isManual) {
-                    openPlayStoreDirectly()
                 }
             }
-        } catch (e: Exception) {
-            if (isManual) {
-                openPlayStoreDirectly()
-            }
-        }
+        } catch (_: Exception) {}
     }
 
     private fun openPlayStoreDirectly() {
-        val packageName = requireContext().packageName
+        val targetPackage = requireContext().packageName.removeSuffix(".debug")
         try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
+            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$targetPackage")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                setPackage("com.android.vending")
+            }
+            startActivity(marketIntent)
         } catch (e: Exception) {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
+            try {
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$targetPackage")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(webIntent)
+            } catch (ex: Exception) {
+                android.widget.Toast.makeText(context, "Could not open Google Play Store", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
