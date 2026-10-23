@@ -3,6 +3,8 @@ package com.apadev.memoryfix.worker
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.app.PendingIntent
+import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
@@ -66,6 +68,7 @@ class ExportProcessWorker(
 
         const val CHANNEL_ID = "memory_fix_channel"
         const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_COMPLETE_ID = 1002
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -346,15 +349,8 @@ class ExportProcessWorker(
         }
         AppLogger.recordRunManifest(context, manifest)
 
-        // Final completion notification
-        val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Fix Completed!")
-            .setContentText("Completed: $totalFixed successful, $failedCount failed ($photosFixed photos, $videosFixed videos).")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-        notificationManager.notify(NOTIFICATION_ID, doneNotification)
+        // Final completion notification with persistent tap-to-open intent
+        showCompletionNotification(notificationManager, totalFixed, failedCount, photosFixed, videosFixed)
 
         Result.success(
             workDataOf(
@@ -850,14 +846,8 @@ class ExportProcessWorker(
         }
         AppLogger.recordRunManifest(context, manifest)
 
-        val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Fix Completed!")
-            .setContentText("Completed: $totalFixed successful, $failedCount failed ($photosFixed photos, $videosFixed videos).")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-        notificationManager.notify(NOTIFICATION_ID, doneNotification)
+        // Final completion notification with persistent tap-to-open intent
+        showCompletionNotification(notificationManager, totalFixed, failedCount, photosFixed, videosFixed)
 
         return Result.success(
             workDataOf(
@@ -894,6 +884,66 @@ class ExportProcessWorker(
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
+    }
+
+    private fun showCompletionNotification(
+        notificationManager: NotificationManager,
+        totalFixed: Int,
+        failedCount: Int,
+        photosFixed: Int,
+        videosFixed: Int
+    ) {
+        val intent = Intent(context, com.apadev.memoryfix.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val title = if (failedCount == 0) "🎉 Restoration Complete!" else "Restoration Finished with Warnings"
+        val message = if (failedCount == 0) {
+            "Successfully fixed $totalFixed memories ($photosFixed photos, $videosFixed videos) to your gallery."
+        } else {
+            "Fixed $totalFixed memories ($photosFixed photos, $videosFixed videos). $failedCount items had issues."
+        }
+
+        val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_COMPLETE_ID, doneNotification)
+    }
+
+    private fun showFailureNotification(notificationManager: NotificationManager, reason: String) {
+        val intent = Intent(context, com.apadev.memoryfix.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val failureNotification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("MemoryFix Encountered an Issue")
+            .setContentText(reason)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_COMPLETE_ID, failureNotification)
     }
 
     private data class ChunkCandidate(

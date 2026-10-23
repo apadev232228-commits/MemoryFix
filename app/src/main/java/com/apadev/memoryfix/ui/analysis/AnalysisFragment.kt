@@ -1,11 +1,15 @@
 package com.apadev.memoryfix.ui.analysis
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -46,6 +50,30 @@ class AnalysisFragment : Fragment() {
 
     private var isGpsUnlockedViaAd: Boolean = false
     private var isDuplicatesUnlockedViaAd: Boolean = false
+
+    private var pendingProcessingAction: (() -> Unit)? = null
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        pendingProcessingAction?.invoke()
+        pendingProcessingAction = null
+    }
+
+    private fun checkNotificationPermissionAndProceed(action: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                pendingProcessingAction = action
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        action()
+    }
 
     companion object {
         private const val ARG_FOLDER_URI = "ARG_FOLDER_URI"
@@ -476,32 +504,34 @@ class AnalysisFragment : Fragment() {
     }
 
     private fun startProcessing() {
-        val isZipSource = !zipUris.isNullOrEmpty()
-        if (folderUri == null && !isZipSource) return
+        checkNotificationPermissionAndProceed {
+            val isZipSource = !zipUris.isNullOrEmpty()
+            if (folderUri == null && !isZipSource) return@checkNotificationPermissionAndProceed
 
-        val app = activity?.application as? MemoryFixApp
-        val isPro = app?.billingManager?.isPro?.value ?: false
-        val stats = scanResult?.stats
-        val totalMedia = stats?.totalMediaFiles ?: 0
+            val app = activity?.application as? MemoryFixApp
+            val isPro = app?.billingManager?.isPro?.value ?: false
+            val stats = scanResult?.stats
+            val totalMedia = stats?.totalMediaFiles ?: 0
 
-        if (totalMedia > FREE_TIER_LIMIT && !isPro) {
-            val formattedPrice = app?.billingManager?.getFormattedPrice() ?: "$4.99"
-            val numberFormat = NumberFormat.getIntegerInstance()
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Restore 1,500 Free or Unlock All?")
-                .setMessage("Your export has ${numberFormat.format(totalMedia)} memories.\n\nFree tier restores up to 1,500 memories per run. Upgrade to Lifetime Pro ($formattedPrice) to restore all ${numberFormat.format(totalMedia)} memories in one run with zero ads.")
-                .setIcon(R.drawable.ic_auto_fix)
-                .setPositiveButton("💎 Unlock Pro ($formattedPrice)") { _, _ ->
-                    ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
-                }
-                .setNegativeButton("Restore 1,500 Free") { _, _ ->
-                    executeProcessing(isZipSource = isZipSource, isPro = false, maxLimit = FREE_TIER_LIMIT)
-                }
-                .show()
-            return
+            if (totalMedia > FREE_TIER_LIMIT && !isPro) {
+                val formattedPrice = app?.billingManager?.getFormattedPrice() ?: "$4.99"
+                val numberFormat = NumberFormat.getIntegerInstance()
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Restore 1,500 Free or Unlock All?")
+                    .setMessage("Your export has ${numberFormat.format(totalMedia)} memories.\n\nFree tier restores up to 1,500 memories per run. Upgrade to Lifetime Pro ($formattedPrice) to restore all ${numberFormat.format(totalMedia)} memories in one run with zero ads.")
+                    .setIcon(R.drawable.ic_auto_fix)
+                    .setPositiveButton("💎 Unlock Pro ($formattedPrice)") { _, _ ->
+                        ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
+                    }
+                    .setNegativeButton("Restore 1,500 Free") { _, _ ->
+                        executeProcessing(isZipSource = isZipSource, isPro = false, maxLimit = FREE_TIER_LIMIT)
+                    }
+                    .show()
+                return@checkNotificationPermissionAndProceed
+            }
+
+            executeProcessing(isZipSource = isZipSource, isPro = isPro, maxLimit = if (isPro) -1 else FREE_TIER_LIMIT)
         }
-
-        executeProcessing(isZipSource = isZipSource, isPro = isPro, maxLimit = if (isPro) -1 else FREE_TIER_LIMIT)
     }
 
     private fun executeProcessing(isZipSource: Boolean, isPro: Boolean, maxLimit: Int) {
