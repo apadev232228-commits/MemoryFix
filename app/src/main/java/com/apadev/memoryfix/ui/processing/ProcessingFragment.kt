@@ -17,6 +17,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.R
+import com.apadev.memoryfix.analytics.AttributionManager
 import com.apadev.memoryfix.databinding.FragmentProcessingBinding
 import com.apadev.memoryfix.worker.ExportProcessWorker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -43,6 +44,7 @@ class ProcessingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         startPulseAnimation()
+        setupReferralSurvey()
 
         binding.btnCancelProcessing.setOnClickListener {
             showCancelConfirmationDialog()
@@ -183,6 +185,71 @@ class ProcessingFragment : Fragment() {
             interpolator = AccelerateDecelerateInterpolator()
             start()
         }
+    }
+
+    private fun setupReferralSurvey() {
+        if (AttributionManager.hasAnswered(requireContext())) {
+            binding.cardReferralSurvey.visibility = View.GONE
+            return
+        }
+
+        binding.cardReferralSurvey.visibility = View.VISIBLE
+
+        val chipMap = mapOf(
+            binding.chipReddit to "Reddit",
+            binding.chipGoogle to "Google Search",
+            binding.chipTikTok to "TikTok / Reels",
+            binding.chipYouTube to "YouTube",
+            binding.chipPlayStore to "Play Store",
+            binding.chipFriend to "Friend / Family",
+            binding.chipOther to "Other"
+        )
+
+        chipMap.forEach { (chip, answer) ->
+            chip.setOnClickListener {
+                submitSurveyAnswer(answer)
+            }
+        }
+    }
+
+    private fun submitSurveyAnswer(answer: String) {
+        AttributionManager.submitAnswer(requireContext(), answer)
+
+        // Disable all chips so multiple taps don't fire
+        for (i in 0 until binding.chipGroupReferral.childCount) {
+            binding.chipGroupReferral.getChildAt(i).isEnabled = false
+        }
+
+        // Fade out question & fade in Thank You view
+        binding.layoutSurveyContent.animate()
+            .alpha(0f)
+            .setDuration(200)
+            .withEndAction {
+                if (_binding == null) return@withEndAction
+                binding.layoutSurveyContent.visibility = View.GONE
+                binding.layoutSurveyThankYou.alpha = 0f
+                binding.layoutSurveyThankYou.visibility = View.VISIBLE
+                binding.layoutSurveyThankYou.animate()
+                    .alpha(1f)
+                    .setDuration(250)
+                    .start()
+
+                // Smoothly collapse and hide card after 2.5 seconds
+                binding.cardReferralSurvey.postDelayed({
+                    if (_binding != null) {
+                        binding.cardReferralSurvey.animate()
+                            .alpha(0f)
+                            .setDuration(400)
+                            .withEndAction {
+                                if (_binding != null) {
+                                    binding.cardReferralSurvey.visibility = View.GONE
+                                }
+                            }
+                            .start()
+                    }
+                }, 2500)
+            }
+            .start()
     }
 
     override fun onDestroyView() {

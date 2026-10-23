@@ -300,6 +300,172 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Attribution / Referral Survey Card -->
+        <FrameLayout
+            android:id="@+id/cardReferralSurvey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_card"
+            android:padding="16dp">
+
+            <!-- Survey Question & Chips -->
+            <LinearLayout
+                android:id="@+id/layoutSurveyContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:text="QUICK QUESTION WHILE YOU WAIT"
+                    android:textColor="@color/primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Where did you find MemoryFix?"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Wrap ChipGroup -->
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupReferral"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="8dp"
+                    app:singleLine="false">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipReddit"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="🔴 Reddit"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGoogle"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="🔍 Google Search"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipTikTok"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="🎵 TikTok / Reels"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipYouTube"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="▶️ YouTube"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipPlayStore"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="📱 Play Store"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFriend"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="👥 Friend / Family"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipOther"
+                        style="@style/Widget.Material3.Chip.Assist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/surface_card_elevated"
+                        android:text="💬 Other"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        app:chipStrokeColor="@color/surface_border"
+                        app:chipStrokeWidth="1dp" />
+
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+
+            <!-- Thank You Confirmation View (Hidden by default) -->
+            <LinearLayout
+                android:id="@+id/layoutSurveyThankYou"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingVertical="16dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_check_circle"
+                    app:tint="@color/accent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Thanks for letting us know! 🙌"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="This helps us make MemoryFix even better."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </FrameLayout>
+
         <!-- Cancel Restoration Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelProcessing"
