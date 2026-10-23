@@ -1,6 +1,7 @@
 package com.apadev.memoryfix.ui.result
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.LayoutInflater
@@ -8,10 +9,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentResultBinding
 import com.google.android.play.core.review.ReviewManagerFactory
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class ResultFragment : Fragment() {
 
@@ -32,6 +36,8 @@ class ResultFragment : Fragment() {
         private const val ARG_OVERLAYS_MERGED = "ARG_OVERLAYS_MERGED"
         private const val ARG_FAILED_COUNT = "ARG_FAILED_COUNT"
         private const val ARG_TOTAL_SCANNED = "ARG_TOTAL_SCANNED"
+        private const val PREFS_REVIEW = "memoryfix_review_prefs"
+        private const val KEY_LAST_REVIEW_TIME = "last_review_requested_time"
 
         fun newInstance(
             totalFixed: Int,
@@ -133,7 +139,32 @@ class ResultFragment : Fragment() {
             (activity as? MainActivity)?.navigateToHome()
         }
 
-        // Request in-app review
+        binding.btnRateApp.setOnClickListener {
+            requestInAppReview(isManual = true)
+        }
+
+        // Automatic smart prompt with 1.5s delay so user first digests their success metrics
+        if (totalFixed > 0) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(1500)
+                if (_binding != null) {
+                    requestInAppReview(isManual = false)
+                }
+            }
+        }
+    }
+
+    private fun requestInAppReview(isManual: Boolean) {
+        val prefs = requireContext().getSharedPreferences(PREFS_REVIEW, android.content.Context.MODE_PRIVATE)
+        val lastRequested = prefs.getLong(KEY_LAST_REVIEW_TIME, 0L)
+        val now = System.currentTimeMillis()
+        val cooldownMs = 14L * 24 * 60 * 60 * 1000 // 14 days cooldown for automatic prompt
+
+        if (!isManual && (now - lastRequested < cooldownMs)) {
+            // Respect Google quota and user experience: don't auto-prompt if prompted recently
+            return
+        }
+
         try {
             val manager = ReviewManagerFactory.create(requireContext())
             val request = manager.requestReviewFlow()
@@ -141,12 +172,27 @@ class ResultFragment : Fragment() {
                 if (task.isSuccessful) {
                     val reviewInfo = task.result
                     activity?.let { act ->
-                        manager.launchReviewFlow(act, reviewInfo)
+                        manager.launchReviewFlow(act, reviewInfo).addOnCompleteListener {
+                            prefs.edit().putLong(KEY_LAST_REVIEW_TIME, now).apply()
+                        }
                     }
+                } else if (isManual) {
+                    openPlayStoreDirectly()
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (isManual) {
+                openPlayStoreDirectly()
+            }
+        }
+    }
+
+    private fun openPlayStoreDirectly() {
+        val packageName = requireContext().packageName
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
+        } catch (e: Exception) {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
         }
     }
 

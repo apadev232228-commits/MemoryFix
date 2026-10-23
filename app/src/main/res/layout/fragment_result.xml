@@ -427,10 +427,21 @@
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="16dp"
             android:text="@string/btn_fix_another"
             android:textColor="@color/text_primary"
             app:cornerRadius="26dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRateApp"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="16dp"
+            android:text="⭐ Enjoying MemoryFix? Rate us on Play Store"
+            android:textColor="@color/pro_gold"
+            android:textSize="13sp" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
