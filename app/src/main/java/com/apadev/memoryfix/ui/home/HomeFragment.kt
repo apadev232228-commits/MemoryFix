@@ -123,6 +123,11 @@ class HomeFragment : Fragment() {
         binding.layoutHowItWorksCard.setOnClickListener {
             showHowItWorksBottomSheet()
         }
+
+        binding.btnFeedbackSupport.setOnClickListener {
+            com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.newInstance()
+                .show(parentFragmentManager, com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.TAG)
+        }
     }
 
     private fun showFeaturesBottomSheet() {

@@ -573,5 +573,16 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFeedbackSupport"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:text="Need help or have feedback? Contact Support"
+            android:textColor="@color/primary"
+            android:textSize="12sp" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

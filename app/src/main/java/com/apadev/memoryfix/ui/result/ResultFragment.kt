@@ -116,6 +116,18 @@ class ResultFragment : Fragment() {
         binding.tvResultVideosCount.text = videosFixed.toString()
         binding.tvResultOverlaysCount.text = overlaysMerged.toString()
 
+        if (failedCount > 0) {
+            binding.cardErrorReport.visibility = View.VISIBLE
+            binding.tvErrorReportTitle.text = "$failedCount file${if (failedCount > 1) "s" else ""} couldn't be restored"
+            binding.btnReportFailedFiles.setOnClickListener {
+                com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.newInstance(
+                    "Restoration issue: $failedCount of $totalScanned files could not be restored."
+                ).show(parentFragmentManager, com.apadev.memoryfix.ui.feedback.FeedbackBottomSheet.TAG)
+            }
+        } else {
+            binding.cardErrorReport.visibility = View.GONE
+        }
+
         binding.btnOpenGallery.setOnClickListener {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {

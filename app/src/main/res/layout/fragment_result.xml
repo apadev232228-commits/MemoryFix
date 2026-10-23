@@ -377,6 +377,62 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- Error Report Card (Visible when failedCount > 0) -->
+        <LinearLayout
+            android:id="@+id/cardErrorReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_tip_card"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_warning"
+                    app:tint="@color/amber" />
+
+                <TextView
+                    android:id="@+id/tvErrorReportTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:text="Some files couldn't be fixed"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvErrorReportDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="A few files in this archive had corrupted headers or missing metadata. Tap below to send a diagnostic report so we can investigate."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReportFailedFiles"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="🐛 Report Issue &amp; Send Logs"
+                android:textColor="@color/amber"
+                android:textSize="12sp"
+                app:cornerRadius="16dp" />
+        </LinearLayout>
+
         <!-- Google Photos / Gallery Tip -->
         <LinearLayout
             android:layout_width="match_parent"

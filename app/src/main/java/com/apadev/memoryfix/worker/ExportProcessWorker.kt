@@ -21,6 +21,7 @@ import android.os.Environment
 import com.apadev.memoryfix.data.ScannedMedia
 import com.apadev.memoryfix.data.VideoChunkMerger
 import com.apadev.memoryfix.data.VideoOverlayCompositor
+import com.apadev.memoryfix.logging.AppLogger
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -35,6 +36,7 @@ class ExportProcessWorker(
 ) : CoroutineWorker(context, params) {
 
     companion object {
+        private const val TAG = "ExportProcessWorker"
         const val KEY_TREE_URI = "KEY_TREE_URI"
         const val KEY_ZIP_URIS = "KEY_ZIP_URIS"
         const val KEY_EMBED_LOCATION = "KEY_EMBED_LOCATION"
@@ -86,6 +88,7 @@ class ExportProcessWorker(
         }
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        AppLogger.i(TAG, "Export started: isZip=${!zipUriStrings.isNullOrEmpty()}, embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideo=$burnVideoOverlays, maxLimit=$maxMediaLimit")
 
         if (!zipUriStrings.isNullOrEmpty()) {
             return@withContext processZipExport(
@@ -293,6 +296,7 @@ class ExportProcessWorker(
                     }
                 }
             } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to restore ZIP item: $fileName: ${e.message}", e)
                 e.printStackTrace()
             }
 

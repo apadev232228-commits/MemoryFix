@@ -12,6 +12,9 @@ class MemoryFixApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
+        // Initialize Logger
+        com.apadev.memoryfix.logging.AppLogger.init(this)
+
         // Initialize AdMob
         AdManager.init(this)
 
