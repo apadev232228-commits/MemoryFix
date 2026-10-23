@@ -419,7 +419,7 @@ class ExportProcessWorker(
         val chunkCacheDir = File(context.cacheDir, "zip_chunks").apply { mkdirs() }
 
         val totalChunkGroups = chunkGroupMap.size
-        val totalWorkUnits = total + totalChunkGroups + 1
+        val totalWorkUnits = total + totalChunkGroups
         var workProgress = 0
 
         // Report total immediately so UI shows progress from the start

@@ -77,10 +77,16 @@ class ProcessingFragment : Fragment() {
                 if (total > 0 && current > 0) {
                     val percent = ((current.toLong() * 100) / total).toInt().coerceIn(0, 100)
                     binding.tvProgressPercentage.text = "$percent%"
-                    binding.tvItemCounter.text = "Restoring $current of $total memories"
+                    val isFinalizing = progressFile?.startsWith("Finalizing") == true
+                    val isStitching = progressFile?.startsWith("Stitching") == true
+                    binding.tvItemCounter.text = when {
+                        isFinalizing -> "Finalizing gallery indexing ($total memories)..."
+                        isStitching -> progressFile ?: "Stitching stories..."
+                        else -> "Restoring $current of $total memories"
+                    }
                     val displayStatus = when {
-                        progressFile?.startsWith("Stitching") == true -> progressFile
-                        progressFile?.startsWith("Finalizing") == true -> progressFile
+                        isStitching -> progressFile
+                        isFinalizing -> progressFile
                         progressFile?.startsWith("Starting") == true -> progressFile
                         !progressFile.isNullOrEmpty() -> "Restoring: $progressFile"
                         else -> "Restoring memory $current of $total"
