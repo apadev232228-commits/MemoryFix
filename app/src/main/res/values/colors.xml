@@ -1,48 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand Primary -->
-    <color name="primary">#7C4DFF</color>
-    <color name="primary_variant">#651FFF</color>
-    <color name="primary_container">#251B4E</color>
+    <!-- Brand Primary (Curated Luxurious Royal Violet) -->
+    <color name="primary">#6D28D9</color>
+    <color name="primary_variant">#5B21B6</color>
+    <color name="primary_container">#EDE9FE</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="on_primary_container">#E8DDFF</color>
+    <color name="on_primary_container">#4C1D95</color>
 
-    <!-- Accent Mint / Success -->
-    <color name="accent">#00E676</color>
-    <color name="accent_container">#0E3321</color>
-    <color name="on_accent">#00391A</color>
+    <!-- Accent Mint / Success (Emerald 600 - crisp legibility on light background) -->
+    <color name="accent">#059669</color>
+    <color name="accent_container">#D1FAE5</color>
+    <color name="on_accent">#FFFFFF</color>
 
     <!-- Warning / Amber -->
-    <color name="amber">#FFB300</color>
-    <color name="amber_container">#382900</color>
+    <color name="amber">#D97706</color>
+    <color name="amber_container">#FEF3C7</color>
 
     <!-- Error -->
-    <color name="error">#FF5252</color>
+    <color name="error">#DC2626</color>
 
-    <!-- Surfaces & Backgrounds (Dark First aesthetic) -->
-    <color name="bg_dark">#0E1118</color>
-    <color name="surface_card">#171B26</color>
-    <color name="surface_card_elevated">#212636</color>
-    <color name="surface_border">#2C3349</color>
+    <!-- Surfaces & Backgrounds (Premium Clean Alabaster / Slate) -->
+    <color name="bg_dark">#F8FAFC</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_card_elevated">#F1F5F9</color>
+    <color name="surface_border">#E2E8F0</color>
 
-    <!-- Text Colors -->
-    <color name="text_primary">#F1F5F9</color>
-    <color name="text_secondary">#94A3B8</color>
-    <color name="text_tertiary">#64748B</color>
+    <!-- Hero Card Gradients & Borders -->
+    <color name="hero_bg_start">#FFFFFF</color>
+    <color name="hero_bg_end">#F8FAFC</color>
+    <color name="hero_border">#CBD5E1</color>
+
+    <!-- Text Colors (Deep Slate for effortless legibility) -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_tertiary">#94A3B8</color>
 
     <!-- Badges & Chips -->
-    <color name="chip_bg">#232A3B</color>
-    <color name="chip_border">#3B445D</color>
-    <color name="pro_gold">#FFD700</color>
-    <color name="pro_gold_dark">#B8860B</color>
+    <color name="chip_bg">#F1F5F9</color>
+    <color name="chip_border">#E2E8F0</color>
+    <color name="pro_gold">#B45309</color>
+    <color name="pro_gold_dark">#92400E</color>
+    <color name="pro_pill_bg">#FEF3C7</color>
+    <color name="pro_pill_border">#F59E0B</color>
+
+    <!-- Tip Card & Progress Orb -->
+    <color name="tip_card_bg">#F0FDF4</color>
+    <color name="tip_card_border">#BBF7D0</color>
+    <color name="orb_start">#EDE9FE</color>
+    <color name="orb_end">#DDD6FE</color>
+    <color name="orb_border">#C4B5FD</color>
+
+    <!-- Comparison Pills (Before / After) -->
+    <color name="pill_before_bg">#FEE2E2</color>
+    <color name="pill_before_border">#FECACA</color>
+    <color name="pill_before_text">#DC2626</color>
+    <color name="pill_after_bg">#DCFCE7</color>
+    <color name="pill_after_border">#BBF7D0</color>
+    <color name="pill_after_text">#15803D</color>
 
     <!-- Visual Media Identifiers -->
-    <color name="photo_purple">#A78BFA</color>
-    <color name="photo_purple_container">#231A47</color>
-    <color name="video_blue">#38BDF8</color>
-    <color name="video_blue_container">#0C2B45</color>
-    <color name="overlay_pink">#F472B6</color>
-    <color name="overlay_pink_container">#3B132B</color>
-    <color name="mismatch_amber_bg">#231804</color>
-    <color name="mismatch_amber_border">#B45309</color>
+    <color name="photo_purple">#7C3AED</color>
+    <color name="photo_purple_container">#EDE9FE</color>
+    <color name="video_blue">#0284C7</color>
+    <color name="video_blue_container">#E0F2FE</color>
+    <color name="overlay_pink">#DB2777</color>
+    <color name="overlay_pink_container">#FCE7F3</color>
+    <color name="mismatch_amber_bg">#FFFBEB</color>
+    <color name="mismatch_amber_border">#FDE68A</color>
 </resources>

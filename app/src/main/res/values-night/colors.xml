@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Primary (Vibrant Electric Violet) -->
+    <color name="primary">#7C4DFF</color>
+    <color name="primary_variant">#651FFF</color>
+    <color name="primary_container">#251B4E</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_primary_container">#E8DDFF</color>
+
+    <!-- Accent Mint / Success (Neon Emerald) -->
+    <color name="accent">#00E676</color>
+    <color name="accent_container">#0E3321</color>
+    <color name="on_accent">#00391A</color>
+
+    <!-- Warning / Amber -->
+    <color name="amber">#FFB300</color>
+    <color name="amber_container">#382900</color>
+
+    <!-- Error -->
+    <color name="error">#FF5252</color>
+
+    <!-- Surfaces & Backgrounds (Sleek Deep Obsidian / Midnight Slate) -->
+    <color name="bg_dark">#0E1118</color>
+    <color name="surface_card">#171B26</color>
+    <color name="surface_card_elevated">#212636</color>
+    <color name="surface_border">#2C3349</color>
+
+    <!-- Hero Card Gradients & Borders -->
+    <color name="hero_bg_start">#1B1E2E</color>
+    <color name="hero_bg_end">#141724</color>
+    <color name="hero_border">#353956</color>
+
+    <!-- Text Colors (Luminous Slate & Crisp White) -->
+    <color name="text_primary">#F1F5F9</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="text_tertiary">#64748B</color>
+
+    <!-- Badges & Chips -->
+    <color name="chip_bg">#232A3B</color>
+    <color name="chip_border">#3B445D</color>
+    <color name="pro_gold">#FFD700</color>
+    <color name="pro_gold_dark">#B8860B</color>
+    <color name="pro_pill_bg">#211A07</color>
+    <color name="pro_pill_border">#8A701E</color>
+
+    <!-- Tip Card & Progress Orb -->
+    <color name="tip_card_bg">#1A2133</color>
+    <color name="tip_card_border">#2F3E61</color>
+    <color name="orb_start">#2A1D54</color>
+    <color name="orb_end">#17132B</color>
+    <color name="orb_border">#5138A3</color>
+
+    <!-- Comparison Pills (Before / After) -->
+    <color name="pill_before_bg">#2A1B20</color>
+    <color name="pill_before_border">#4D2833</color>
+    <color name="pill_before_text">#FF8A80</color>
+    <color name="pill_after_bg">#132B20</color>
+    <color name="pill_after_border">#1E543B</color>
+    <color name="pill_after_text">#69F0AE</color>
+
+    <!-- Visual Media Identifiers -->
+    <color name="photo_purple">#A78BFA</color>
+    <color name="photo_purple_container">#231A47</color>
+    <color name="video_blue">#38BDF8</color>
+    <color name="video_blue_container">#0C2B45</color>
+    <color name="overlay_pink">#F472B6</color>
+    <color name="overlay_pink_container">#3B132B</color>
+    <color name="mismatch_amber_bg">#231804</color>
+    <color name="mismatch_amber_border">#B45309</color>
+</resources>

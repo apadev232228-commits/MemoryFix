@@ -95,7 +95,7 @@
                         android:layout_gravity="center"
                         android:includeFontPadding="false"
                         android:text="👑 PRO"
-                        android:textColor="#FFD700"
+                        android:textColor="@color/pro_gold"
                         android:textSize="11sp"
                         android:textStyle="bold" />
                 </FrameLayout>
@@ -150,7 +150,7 @@
             app:cardBackgroundColor="@null"
             app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
-            app:strokeColor="#353956"
+            app:strokeColor="@color/hero_border"
             app:strokeWidth="1dp">
 
             <LinearLayout

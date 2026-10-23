@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="❌  WITHOUT FIX (Raw Snapchat Export)"
-            android:textColor="#FF8A80"
+            android:textColor="@color/pill_before_text"
             android:textSize="12sp"
             android:textStyle="bold" />
 
