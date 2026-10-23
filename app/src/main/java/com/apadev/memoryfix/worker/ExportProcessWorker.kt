@@ -65,6 +65,8 @@ class ExportProcessWorker(
         const val RESULT_OVERLAYS_MERGED = "RESULT_OVERLAYS_MERGED"
         const val RESULT_FAILED = "RESULT_FAILED"
         const val RESULT_TOTAL_SCANNED = "RESULT_TOTAL_SCANNED"
+        const val RESULT_DUPLICATES_SKIPPED = "RESULT_DUPLICATES_SKIPPED"
+        const val RESULT_CHUNKS_MERGED = "RESULT_CHUNKS_MERGED"
 
         const val CHANNEL_ID = "memory_fix_channel"
         const val NOTIFICATION_ID = 1001
@@ -319,6 +321,9 @@ class ExportProcessWorker(
         }
 
         val totalFixed = photosFixed + videosFixed
+        val duplicatesCleaned = if (skipDuplicates) list.count { it.isDuplicate } else 0
+        val secondaryChunksMerged = mergedSecondaryUris.size
+        val actualFailed = failureLogList.size
 
         val manifest = buildString {
             appendLine("EXPORT RUN MANIFEST (FOLDER EXPORT)")
@@ -328,7 +333,9 @@ class ExportProcessWorker(
             appendLine("Photos Fixed: $photosFixed")
             appendLine("Videos Fixed: $videosFixed")
             appendLine("Overlays Merged: $overlaysMerged")
-            appendLine("Failed Count: $failedCount")
+            appendLine("Duplicates Cleaned: $duplicatesCleaned")
+            appendLine("Video Chunks Stitched: $secondaryChunksMerged")
+            appendLine("Failed Count: $actualFailed")
             appendLine("Settings: embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideoOverlays=$burnVideoOverlays, mergeVideoChunks=$mergeVideoChunks, maxMediaLimit=$maxMediaLimit")
             if (failureLogList.isNotEmpty()) {
                 appendLine("\n--- FAILED FILES (${failureLogList.size}) ---")
@@ -340,7 +347,7 @@ class ExportProcessWorker(
         AppLogger.recordRunManifest(context, manifest)
 
         // Final completion notification with persistent tap-to-open intent
-        showCompletionNotification(notificationManager, totalFixed, failedCount, photosFixed, videosFixed)
+        showCompletionNotification(notificationManager, totalFixed, actualFailed, photosFixed, videosFixed)
 
         Result.success(
             workDataOf(
@@ -348,7 +355,9 @@ class ExportProcessWorker(
                 RESULT_PHOTOS to photosFixed,
                 RESULT_VIDEOS to videosFixed,
                 RESULT_OVERLAYS_MERGED to overlaysMerged,
-                RESULT_FAILED to failedCount,
+                RESULT_FAILED to actualFailed,
+                RESULT_DUPLICATES_SKIPPED to duplicatesCleaned,
+                RESULT_CHUNKS_MERGED to secondaryChunksMerged,
                 RESULT_TOTAL_SCANNED to rawList.size
             )
         )
@@ -777,7 +786,10 @@ class ExportProcessWorker(
         )
 
         val totalFixed = photosFixed + videosFixed
-        failedCount = (total - totalFixed).coerceAtLeast(0)
+        val duplicatesCleaned = if (skipDuplicates) list.count { it.isDuplicate } else 0
+        val secondaryChunksMerged = secondaryChunkNames.size
+        val actualFailed = failureLogList.size
+        failedCount = actualFailed
 
         val manifest = buildString {
             appendLine("EXPORT RUN MANIFEST (ZIP EXPORT)")
@@ -787,13 +799,13 @@ class ExportProcessWorker(
             appendLine("Photos Fixed: $photosFixed")
             appendLine("Videos Fixed: $videosFixed")
             appendLine("Overlays Merged: $overlaysMerged")
-            appendLine("Failed Count: $failedCount")
+            appendLine("Duplicates Cleaned: $duplicatesCleaned")
+            appendLine("Video Chunks Stitched: $secondaryChunksMerged")
+            appendLine("Failed Count: $actualFailed")
             appendLine("Settings: embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideoOverlays=$burnVideoOverlays, mergeVideoChunks=$mergeVideoChunks, maxMediaLimit=$maxMediaLimit")
             if (failureLogList.isNotEmpty()) {
                 appendLine("\n--- FAILED FILES (${failureLogList.size}) ---")
                 failureLogList.forEach { appendLine("• $it") }
-            } else if (failedCount > 0) {
-                appendLine("\n--- $failedCount files were skipped or could not be verified in target gallery ---")
             } else {
                 appendLine("\nStatus: All files restored successfully with 0 errors.")
             }
@@ -801,7 +813,7 @@ class ExportProcessWorker(
         AppLogger.recordRunManifest(context, manifest)
 
         // Final completion notification with persistent tap-to-open intent
-        showCompletionNotification(notificationManager, totalFixed, failedCount, photosFixed, videosFixed)
+        showCompletionNotification(notificationManager, totalFixed, actualFailed, photosFixed, videosFixed)
 
         return Result.success(
             workDataOf(
@@ -809,19 +821,33 @@ class ExportProcessWorker(
                 RESULT_PHOTOS to photosFixed,
                 RESULT_VIDEOS to videosFixed,
                 RESULT_OVERLAYS_MERGED to overlaysMerged,
-                RESULT_FAILED to failedCount,
+                RESULT_FAILED to actualFailed,
+                RESULT_DUPLICATES_SKIPPED to duplicatesCleaned,
+                RESULT_CHUNKS_MERGED to secondaryChunksMerged,
                 RESULT_TOTAL_SCANNED to rawList.size
             )
         )
     }
 
     private fun createNotification(current: Int, total: Int, text: String): android.app.Notification {
+        val pct = if (total > 0) ((current.toDouble() / total) * 100).toInt().coerceIn(0, 100) else 0
+        val intent = Intent(context, com.apadev.memoryfix.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("MemoryFix is working...")
-            .setContentText(text)
+            .setContentTitle("Fixing Memories ($pct%)")
+            .setContentText("$current of $total • $text")
             .setProgress(total, current, false)
             .setOngoing(true)
+            .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }

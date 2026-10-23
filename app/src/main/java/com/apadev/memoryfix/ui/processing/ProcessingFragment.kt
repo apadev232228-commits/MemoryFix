@@ -110,6 +110,8 @@ class ProcessingFragment : Fragment() {
                     val overlaysMerged = workInfo.outputData.getInt(ExportProcessWorker.RESULT_OVERLAYS_MERGED, overlaysCount)
                     val failedCount = workInfo.outputData.getInt(ExportProcessWorker.RESULT_FAILED, 0)
                     val totalScanned = workInfo.outputData.getInt(ExportProcessWorker.RESULT_TOTAL_SCANNED, total)
+                    val duplicatesSkipped = workInfo.outputData.getInt(ExportProcessWorker.RESULT_DUPLICATES_SKIPPED, 0)
+                    val chunksMerged = workInfo.outputData.getInt(ExportProcessWorker.RESULT_CHUNKS_MERGED, 0)
 
                     (activity as? MainActivity)?.navigateToResult(
                         totalFixed = resultTotal,
@@ -117,7 +119,9 @@ class ProcessingFragment : Fragment() {
                         videosFixed = resultVideos,
                         overlaysMerged = overlaysMerged,
                         failedCount = failedCount,
-                        totalScanned = totalScanned
+                        totalScanned = totalScanned,
+                        duplicatesSkipped = duplicatesSkipped,
+                        chunksMerged = chunksMerged
                     )
                 } else if (workInfo.state == WorkInfo.State.FAILED) {
                     Toast.makeText(requireContext(), "Processing encountered an issue", Toast.LENGTH_LONG).show()

@@ -62,16 +62,14 @@ class HomeFragment : Fragment() {
                     val anyValid = validationResults.any { it.isValid }
                     if (!anyValid) {
                         MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("Not a Snapchat Export?")
-                            .setMessage("The selected file doesn't seem to contain Snapchat memories (we couldn't find memories_history.json or Snapchat photos/videos).\n\nPlease verify you selected the official ZIP downloaded from Snapchat (typically named 'mydata~...zip').\n\nWould you like to try again, or proceed anyway?")
+                            .setTitle("Invalid Snapchat Archive")
+                            .setMessage("The selected file doesn't seem to contain Snapchat memories (no memories_history.json or Snapchat photos/videos found).\n\nPlease verify you selected the official ZIP downloaded from Snapchat (typically named 'mydata~...zip').")
                             .setIcon(R.drawable.ic_warning)
-                            .setPositiveButton("Proceed Anyway") { _, _ ->
-                                (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)
-                            }
-                            .setNegativeButton("Select Again") { _, _ ->
+                            .setPositiveButton("Select Valid ZIP") { _, _ ->
                                 openZipPicker()
                             }
-                            .setNeutralButton("Cancel", null)
+                            .setNegativeButton("Cancel", null)
+                            .setCancelable(false)
                             .show()
                     } else {
                         (activity as? MainActivity)?.navigateToAnalysisWithZips(uris)

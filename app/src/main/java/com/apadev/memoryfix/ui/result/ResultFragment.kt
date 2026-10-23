@@ -28,6 +28,8 @@ class ResultFragment : Fragment() {
     private var overlaysMerged: Int = 0
     private var failedCount: Int = 0
     private var totalScanned: Int = 0
+    private var duplicatesSkipped: Int = 0
+    private var chunksMerged: Int = 0
 
     companion object {
         private const val ARG_TOTAL_FIXED = "ARG_TOTAL_FIXED"
@@ -36,6 +38,8 @@ class ResultFragment : Fragment() {
         private const val ARG_OVERLAYS_MERGED = "ARG_OVERLAYS_MERGED"
         private const val ARG_FAILED_COUNT = "ARG_FAILED_COUNT"
         private const val ARG_TOTAL_SCANNED = "ARG_TOTAL_SCANNED"
+        private const val ARG_DUPLICATES_SKIPPED = "ARG_DUPLICATES_SKIPPED"
+        private const val ARG_CHUNKS_MERGED = "ARG_CHUNKS_MERGED"
         private const val PREFS_REVIEW = "memoryfix_review_prefs"
         private const val KEY_LAST_REVIEW_TIME = "last_review_requested_time"
 
@@ -45,7 +49,9 @@ class ResultFragment : Fragment() {
             videosFixed: Int,
             overlaysMerged: Int = 0,
             failedCount: Int = 0,
-            totalScanned: Int = 0
+            totalScanned: Int = 0,
+            duplicatesSkipped: Int = 0,
+            chunksMerged: Int = 0
         ): ResultFragment {
             return ResultFragment().apply {
                 arguments = Bundle().apply {
@@ -55,6 +61,8 @@ class ResultFragment : Fragment() {
                     putInt(ARG_OVERLAYS_MERGED, overlaysMerged)
                     putInt(ARG_FAILED_COUNT, failedCount)
                     putInt(ARG_TOTAL_SCANNED, totalScanned)
+                    putInt(ARG_DUPLICATES_SKIPPED, duplicatesSkipped)
+                    putInt(ARG_CHUNKS_MERGED, chunksMerged)
                 }
             }
         }
@@ -68,6 +76,8 @@ class ResultFragment : Fragment() {
         overlaysMerged = arguments?.getInt(ARG_OVERLAYS_MERGED, 0) ?: 0
         failedCount = arguments?.getInt(ARG_FAILED_COUNT, 0) ?: 0
         totalScanned = arguments?.getInt(ARG_TOTAL_SCANNED, 0) ?: 0
+        duplicatesSkipped = arguments?.getInt(ARG_DUPLICATES_SKIPPED, 0) ?: 0
+        chunksMerged = arguments?.getInt(ARG_CHUNKS_MERGED, 0) ?: 0
     }
 
     override fun onCreateView(
@@ -95,6 +105,7 @@ class ResultFragment : Fragment() {
             binding.layoutSkippedRow.visibility = View.VISIBLE
             binding.layoutSkippedContent.visibility = View.VISIBLE
             binding.tvResultSkippedCount.text = failedCount.toString()
+            binding.tvResultSkippedCount.setTextColor(errorColor)
         } else {
             val secondaryColor = ContextCompat.getColor(requireContext(), R.color.text_secondary)
             binding.ivFailedIcon.setColorFilter(secondaryColor)
@@ -105,16 +116,29 @@ class ResultFragment : Fragment() {
             binding.layoutSkippedContent.visibility = View.GONE
         }
 
-        // Show actual fixed count vs total scanned in summary card
-        binding.tvResultDatesCount.text = if (totalScanned > 0 && totalScanned != totalFixed) {
-            "$totalFixed of $totalScanned"
-        } else {
-            totalFixed.toString()
-        }
-
+        // Summary Breakdown Card
+        binding.tvResultDatesCount.text = totalFixed.toString()
         binding.tvResultPhotosCount.text = photosFixed.toString()
         binding.tvResultVideosCount.text = videosFixed.toString()
         binding.tvResultOverlaysCount.text = overlaysMerged.toString()
+
+        if (duplicatesSkipped > 0) {
+            binding.layoutDuplicatesRow.visibility = View.VISIBLE
+            binding.layoutDuplicatesContent.visibility = View.VISIBLE
+            binding.tvResultDuplicatesCount.text = duplicatesSkipped.toString()
+        } else {
+            binding.layoutDuplicatesRow.visibility = View.GONE
+            binding.layoutDuplicatesContent.visibility = View.GONE
+        }
+
+        if (chunksMerged > 0) {
+            binding.layoutChunksRow.visibility = View.VISIBLE
+            binding.layoutChunksContent.visibility = View.VISIBLE
+            binding.tvResultChunksCount.text = chunksMerged.toString()
+        } else {
+            binding.layoutChunksRow.visibility = View.GONE
+            binding.layoutChunksContent.visibility = View.GONE
+        }
 
         if (failedCount > 0) {
             binding.cardErrorReport.visibility = View.VISIBLE

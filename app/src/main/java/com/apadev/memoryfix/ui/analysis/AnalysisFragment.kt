@@ -493,8 +493,28 @@ class AnalysisFragment : Fragment() {
             binding.cardMismatch.visibility = View.GONE
         }
 
-        binding.btnStartProcessing.isEnabled = true
-        binding.btnStartProcessing.alpha = 1.0f
+        if (s.totalMediaFiles == 0) {
+            binding.btnStartProcessing.isEnabled = false
+            binding.btnStartProcessing.alpha = 0.5f
+            binding.cardMismatch.visibility = View.VISIBLE
+            binding.tvMismatchTitle.text = "No Memories Found in Archive"
+            binding.tvMismatchDesc.text = "We couldn't find any Snapchat photos or videos in the selected files. Please choose a valid Snapchat export archive."
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("No Memories Found")
+                .setMessage("No compatible Snapchat photos or videos were found in the selected files.\n\nPlease ensure you downloaded the full Memories export from Snapchat (Settings > My Data > Memories).")
+                .setIcon(R.drawable.ic_warning)
+                .setPositiveButton("Select Another Archive") { _, _ ->
+                    (activity as? MainActivity)?.navigateToHome()
+                }
+                .setNegativeButton("Go Back") { _, _ ->
+                    (activity as? MainActivity)?.navigateToHome()
+                }
+                .setCancelable(false)
+                .show()
+        } else {
+            binding.btnStartProcessing.isEnabled = true
+            binding.btnStartProcessing.alpha = 1.0f
+        }
     }
 
     private fun showMismatchWarningDialog(s: ScanStats) {
@@ -528,14 +548,19 @@ class AnalysisFragment : Fragment() {
     }
 
     private fun startProcessing() {
+        val stats = scanResult?.stats
+        val totalMedia = stats?.totalMediaFiles ?: 0
+        if (totalMedia == 0) {
+            android.widget.Toast.makeText(requireContext(), "No memories found to restore.", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
         checkNotificationPermissionAndProceed {
             val isZipSource = !zipUris.isNullOrEmpty()
             if (folderUri == null && !isZipSource) return@checkNotificationPermissionAndProceed
 
             val app = activity?.application as? MemoryFixApp
             val isPro = app?.billingManager?.isPro?.value ?: false
-            val stats = scanResult?.stats
-            val totalMedia = stats?.totalMediaFiles ?: 0
 
             if (totalMedia > FREE_TIER_LIMIT && !isPro) {
                 val formattedPrice = app?.billingManager?.getFormattedPrice() ?: "$4.99"

@@ -140,7 +140,9 @@ class MainActivity : AppCompatActivity() {
         videosFixed: Int,
         overlaysMerged: Int = 0,
         failedCount: Int = 0,
-        totalScanned: Int = 0
+        totalScanned: Int = 0,
+        duplicatesSkipped: Int = 0,
+        chunksMerged: Int = 0
     ) {
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.fade_scale_in, R.anim.fade_scale_out)
@@ -152,7 +154,9 @@ class MainActivity : AppCompatActivity() {
                     videosFixed = videosFixed,
                     overlaysMerged = overlaysMerged,
                     failedCount = failedCount,
-                    totalScanned = totalScanned
+                    totalScanned = totalScanned,
+                    duplicatesSkipped = duplicatesSkipped,
+                    chunksMerged = chunksMerged
                 )
             )
             .commit()
