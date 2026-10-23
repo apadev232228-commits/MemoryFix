@@ -46,7 +46,6 @@ class AnalysisFragment : Fragment() {
     private var zipUris: List<Uri>? = null
     private var scanResult: FullScanResult? = null
     private var selectedTimezone: String = TimeZone.getDefault().id
-    private var isSettingsExpanded: Boolean = false
 
     private var isGpsUnlockedViaAd: Boolean = false
     private var isDuplicatesUnlockedViaAd: Boolean = false
@@ -150,65 +149,68 @@ class AnalysisFragment : Fragment() {
             ProUpgradeBottomSheet.newInstance().show(parentFragmentManager, ProUpgradeBottomSheet.TAG)
         }
 
-        // Advanced Options Accordion Header
-        binding.layoutSettingsHeader.setOnClickListener {
-            isSettingsExpanded = !isSettingsExpanded
-            binding.layoutSettingsContent.visibility = if (isSettingsExpanded) View.VISIBLE else View.GONE
-            binding.ivSettingsChevron.animate()
-                .rotation(if (isSettingsExpanded) 180f else 0f)
-                .setDuration(200)
-                .start()
-        }
-
         binding.btnChangeTimezone.setOnClickListener {
             showTimezoneDialog()
         }
 
         binding.switchEmbedLocation.setOnClickListener {
             val isPro = billingManager?.isPro?.value ?: false
-            if (!isPro && !isGpsUnlockedViaAd && binding.switchEmbedLocation.isChecked) {
-                showFeatureUnlockDialog(
-                    title = "Unlock Smart GPS Locations",
-                    message = "Smart GPS geotagging (including 30-min surrounding location inference) is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
-                    onUnlockViaAd = {
-                        AdManager.showRewarded(requireActivity(), onRewardEarned = {
-                            isGpsUnlockedViaAd = true
-                            binding.badgeRewardGps.text = "UNLOCKED ✓"
-                            binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
-                        }, onDismissed = {
-                            if (!isGpsUnlockedViaAd) {
-                                binding.switchEmbedLocation.isChecked = false
-                            }
-                        })
-                    },
-                    onCancel = {
-                        binding.switchEmbedLocation.isChecked = false
-                    }
-                )
+            if (!isPro && !isGpsUnlockedViaAd) {
+                if (binding.switchEmbedLocation.isChecked) {
+                    showFeatureUnlockDialog(
+                        title = "Unlock Smart GPS Locations",
+                        message = "Smart GPS geotagging (including 30-min surrounding location inference) is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                        onUnlockViaAd = {
+                            AdManager.showRewarded(requireActivity(), onRewardEarned = {
+                                isGpsUnlockedViaAd = true
+                                binding.badgeRewardGps.text = "UNLOCKED ✓"
+                                binding.badgeRewardGps.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                                binding.switchEmbedLocation.isChecked = true
+                            }, onDismissed = {
+                                if (!isGpsUnlockedViaAd) {
+                                    binding.switchEmbedLocation.isChecked = false
+                                }
+                            })
+                        },
+                        onCancel = {
+                            binding.switchEmbedLocation.isChecked = false
+                        }
+                    )
+                }
             }
         }
 
         binding.switchSkipDuplicates.setOnClickListener {
             val isPro = billingManager?.isPro?.value ?: false
-            if (!isPro && !isDuplicatesUnlockedViaAd && binding.switchSkipDuplicates.isChecked) {
-                showFeatureUnlockDialog(
-                    title = "Unlock Duplicate Cleaner",
-                    message = "Smart duplicate cleaner is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
-                    onUnlockViaAd = {
-                        AdManager.showRewarded(requireActivity(), onRewardEarned = {
-                            isDuplicatesUnlockedViaAd = true
-                            binding.badgeRewardDuplicates.text = "UNLOCKED ✓"
-                            binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
-                        }, onDismissed = {
-                            if (!isDuplicatesUnlockedViaAd) {
-                                binding.switchSkipDuplicates.isChecked = false
-                            }
-                        })
-                    },
-                    onCancel = {
-                        binding.switchSkipDuplicates.isChecked = false
-                    }
-                )
+            if (!isPro && !isDuplicatesUnlockedViaAd) {
+                if (binding.switchSkipDuplicates.isChecked) {
+                    showFeatureUnlockDialog(
+                        title = "Unlock Duplicate Cleaner",
+                        message = "Smart duplicate cleaner is a Pro feature.\n\nWatch a quick sponsor ad to unlock it for this export for free, or upgrade to Lifetime Pro.",
+                        onUnlockViaAd = {
+                            AdManager.showRewarded(requireActivity(), onRewardEarned = {
+                                isDuplicatesUnlockedViaAd = true
+                                binding.badgeRewardDuplicates.text = "UNLOCKED ✓"
+                                binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+                                binding.switchSkipDuplicates.isChecked = true
+                                scanResult?.stats?.let { updateHeroStats(it) }
+                            }, onDismissed = {
+                                if (!isDuplicatesUnlockedViaAd) {
+                                    binding.switchSkipDuplicates.isChecked = false
+                                }
+                                scanResult?.stats?.let { updateHeroStats(it) }
+                            })
+                        },
+                        onCancel = {
+                            binding.switchSkipDuplicates.isChecked = false
+                            scanResult?.stats?.let { updateHeroStats(it) }
+                        }
+                    )
+                } else {
+                    scanResult?.stats?.let { updateHeroStats(it) }
+                }
+            } else {
+                scanResult?.stats?.let { updateHeroStats(it) }
             }
         }
 
@@ -261,6 +263,8 @@ class AnalysisFragment : Fragment() {
             binding.badgeRewardGps.visibility = View.GONE
             binding.badgeRewardDuplicates.visibility = View.GONE
             binding.cardLargeArchiveBanner.visibility = View.GONE
+            binding.switchEmbedLocation.isChecked = true
+            binding.switchSkipDuplicates.isChecked = true
         } else {
             val stats = scanResult?.stats
             if (stats != null && stats.totalMediaFiles > FREE_TIER_LIMIT) {
@@ -268,6 +272,9 @@ class AnalysisFragment : Fragment() {
             }
             binding.badgeRewardGps.visibility = View.VISIBLE
             binding.badgeRewardDuplicates.visibility = View.VISIBLE
+
+            binding.switchEmbedLocation.isChecked = isGpsUnlockedViaAd
+            binding.switchSkipDuplicates.isChecked = isDuplicatesUnlockedViaAd
 
             if (isGpsUnlockedViaAd) {
                 binding.badgeRewardGps.text = "UNLOCKED ✓"
@@ -285,6 +292,7 @@ class AnalysisFragment : Fragment() {
                 binding.badgeRewardDuplicates.setTextColor(ContextCompat.getColor(requireContext(), R.color.pro_gold))
             }
         }
+        scanResult?.stats?.let { updateHeroStats(it) }
     }
 
     private fun showFeatureUnlockDialog(
@@ -336,6 +344,67 @@ class AnalysisFragment : Fragment() {
         }
     }
 
+    private fun updateHeroStats(s: ScanStats) {
+        if (_binding == null) return
+        val numberFormat = NumberFormat.getIntegerInstance()
+        val isDeduplicating = binding.switchSkipDuplicates.isChecked
+
+        val total = if (isDeduplicating) {
+            s.totalMediaFiles
+        } else {
+            if (s.rawMediaCount > 0) s.rawMediaCount else (s.totalMediaFiles + s.duplicateCount)
+        }
+
+        val photos = if (isDeduplicating) {
+            s.photoCount
+        } else {
+            if (s.rawPhotoCount > 0) s.rawPhotoCount else s.photoCount
+        }
+
+        val videos = if (isDeduplicating) {
+            s.videoCount
+        } else {
+            if (s.rawVideoCount > 0) s.rawVideoCount else s.videoCount
+        }
+
+        binding.tvTotalFiles.text = numberFormat.format(total)
+        binding.tvPhotoCount.text = "${numberFormat.format(photos)} Photos"
+        binding.tvVideoCount.text = "${numberFormat.format(videos)} Videos"
+
+        if (isDeduplicating && s.duplicateCount > 0) {
+            val totalScanned = if (s.rawMediaCount > 0) s.rawMediaCount else s.totalMediaFiles + s.duplicateCount
+            binding.tvTotalSubtitle.text = "${numberFormat.format(s.duplicateCount)} duplicates excluded (from ${numberFormat.format(totalScanned)} total)"
+            binding.tvTotalSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
+        } else if (s.duplicateCount > 0) {
+            binding.tvTotalSubtitle.text = "Includes ${numberFormat.format(s.duplicateCount)} duplicate throwback copies"
+            binding.tvTotalSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+        } else {
+            binding.tvTotalSubtitle.text = "All memories unique"
+            binding.tvTotalSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+        }
+
+        if (total > 0) {
+            val photoPct = (photos * 100) / total
+            val videoPct = 100 - photoPct
+            binding.tvPhotoPercentage.text = "($photoPct%)"
+            binding.tvVideoPercentage.text = "($videoPct%)"
+
+            binding.layoutDistributionBar.visibility = View.VISIBLE
+            val photoWeight = maxOf(photos.toFloat(), 0.01f)
+            val videoWeight = maxOf(videos.toFloat(), 0.01f)
+            binding.viewPhotoRatio.layoutParams =
+                (binding.viewPhotoRatio.layoutParams as LinearLayout.LayoutParams).apply {
+                    weight = photoWeight
+                }
+            binding.viewVideoRatio.layoutParams =
+                (binding.viewVideoRatio.layoutParams as LinearLayout.LayoutParams).apply {
+                    weight = videoWeight
+                }
+        } else {
+            binding.layoutDistributionBar.visibility = View.GONE
+        }
+    }
+
     private fun populateStats(result: FullScanResult) {
         val s = result.stats
         val numberFormat = NumberFormat.getIntegerInstance()
@@ -360,39 +429,10 @@ class AnalysisFragment : Fragment() {
                 }
             }.start()
 
-        binding.tvTotalFiles.text = numberFormat.format(s.totalMediaFiles)
-        binding.tvPhotoCount.text = "${numberFormat.format(s.photoCount)} Photos"
-        binding.tvVideoCount.text = "${numberFormat.format(s.videoCount)} Videos"
+        updateHeroStats(s)
 
         val isPro = (activity?.application as? MemoryFixApp)?.billingManager?.isPro?.value ?: false
-        if (s.totalMediaFiles > FREE_TIER_LIMIT && !isPro) {
-            binding.cardLargeArchiveBanner.visibility = View.VISIBLE
-            binding.tvLargeArchiveTitle.text = "💎 Large Archive Detected (${numberFormat.format(s.totalMediaFiles)} memories)"
-            binding.tvLargeArchiveDesc.text = "Free tier restores up to 1,500 memories with ads. Upgrade to Pro to restore all ${numberFormat.format(s.totalMediaFiles)} memories in one run with zero ads."
-        } else {
-            binding.cardLargeArchiveBanner.visibility = View.GONE
-        }
-
-        if (s.totalMediaFiles > 0) {
-            val photoPct = (s.photoCount * 100) / s.totalMediaFiles
-            val videoPct = 100 - photoPct
-            binding.tvPhotoPercentage.text = "($photoPct%)"
-            binding.tvVideoPercentage.text = "($videoPct%)"
-
-            binding.layoutDistributionBar.visibility = View.VISIBLE
-            val photoWeight = maxOf(s.photoCount.toFloat(), 0.01f)
-            val videoWeight = maxOf(s.videoCount.toFloat(), 0.01f)
-            binding.viewPhotoRatio.layoutParams =
-                (binding.viewPhotoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                    weight = photoWeight
-                }
-            binding.viewVideoRatio.layoutParams =
-                (binding.viewVideoRatio.layoutParams as LinearLayout.LayoutParams).apply {
-                    weight = videoWeight
-                }
-        } else {
-            binding.layoutDistributionBar.visibility = View.GONE
-        }
+        updateProUi(isPro)
 
         // Automatic Highlights
         if (s.overlayCount > 0) {
@@ -424,7 +464,7 @@ class AnalysisFragment : Fragment() {
 
         if (s.duplicateCount > 0) {
             binding.layoutSkipDuplicatesOption.visibility = View.VISIBLE
-            binding.tvSkipDuplicatesDesc.text = "${numberFormat.format(s.duplicateCount)} duplicate memories found — keep only 1 clean copy"
+            binding.tvSkipDuplicatesDesc.text = "${numberFormat.format(s.duplicateCount)} duplicate memories found — tap to clean and keep only 1 copy"
         } else {
             binding.layoutSkipDuplicatesOption.visibility = View.GONE
         }

@@ -210,6 +210,15 @@ object MediaScanner {
             val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
             VIDEO_EXTENSIONS.contains(ext)
         }
+        val rawPhotoCount = rawMediaDocs.count { doc ->
+            val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
+            !VIDEO_EXTENSIONS.contains(ext)
+        }
+        val rawVideoCount = rawMediaDocs.count { doc ->
+            val ext = (doc.name ?: "").lowercase().substringAfterLast('.', "")
+            VIDEO_EXTENSIONS.contains(ext)
+        }
+        val rawMediaCount = rawMediaDocs.size
         val duplicateCount = duplicateDocNames.size
         val totalMedia = uniqueDocs.size
 
@@ -336,6 +345,9 @@ object MediaScanner {
             totalMediaFiles = totalFiles,
             photoCount = photoCount,
             videoCount = videoCount,
+            rawMediaCount = rawMediaCount,
+            rawPhotoCount = rawPhotoCount,
+            rawVideoCount = rawVideoCount,
             matchedCount = matchedCount,
             overlayCount = maxOf(overlayCount, overlayMatchedCount),
             photoOverlayCount = photoOverlayMatchedCount,
@@ -487,6 +499,9 @@ object MediaScanner {
         val uniqueEntries = rawMediaEntries.filter { !duplicateNames.contains(it.baseName) }
         val photoCount = uniqueEntries.count { !it.isVideo }
         val videoCount = uniqueEntries.count { it.isVideo }
+        val rawPhotoCount = rawMediaEntries.count { !it.isVideo }
+        val rawVideoCount = rawMediaEntries.count { it.isVideo }
+        val rawMediaCount = rawMediaEntries.size
         val duplicateCount = duplicateNames.size
         val totalMedia = uniqueEntries.size
 
@@ -560,6 +575,9 @@ object MediaScanner {
             totalMediaFiles = totalMedia,
             photoCount = photoCount,
             videoCount = videoCount,
+            rawMediaCount = rawMediaCount,
+            rawPhotoCount = rawPhotoCount,
+            rawVideoCount = rawVideoCount,
             matchedCount = matchedCount,
             overlayCount = maxOf(overlayCount, photoOverlayMatchedCount + videoOverlayMatchedCount),
             photoOverlayCount = photoOverlayMatchedCount,
