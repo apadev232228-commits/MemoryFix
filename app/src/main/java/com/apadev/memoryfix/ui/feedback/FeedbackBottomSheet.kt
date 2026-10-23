@@ -57,6 +57,9 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
         binding.btnCheckUpdate.setOnClickListener {
             (activity as? com.apadev.memoryfix.MainActivity)?.checkForAppUpdate(isUserInitiated = true)
         }
+        binding.btnPrivacyPolicy.setOnClickListener {
+            showPrivacyPolicyDialog()
+        }
 
         binding.btnCancelFeedback.setOnClickListener {
             dismiss()
@@ -87,6 +90,22 @@ class FeedbackBottomSheet : BottomSheetDialogFragment() {
             .setTitle("Diagnostic Log Preview")
             .setView(scrollView)
             .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun showPrivacyPolicyDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Privacy & Security Assurance")
+            .setMessage(
+                "🔒 100% Offline & Private\n" +
+                "Your photos, videos, and Snapchat archive files never leave your device. All timestamp restoration, GPS embedding, and video merging happens completely on-device.\n\n" +
+                "🛡️ No Cloud Servers\n" +
+                "MemoryFix operates zero cloud storage or processing servers.\n\n" +
+                "📊 Diagnostics\n" +
+                "Error logs and device telemetry are only shared if you explicitly choose to attach them when emailing feedback.\n\n" +
+                "Support: apadev232228@gmail.com"
+            )
+            .setPositiveButton("Got It", null)
             .show()
     }
 
