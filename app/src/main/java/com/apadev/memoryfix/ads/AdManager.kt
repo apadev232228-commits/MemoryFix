@@ -21,6 +21,7 @@ object AdManager {
 
     private var rewardedAd: RewardedAd? = null
     private var isRewardedLoading = false
+    private val rewardedLoadCallbacks = mutableListOf<(RewardedAd?) -> Unit>()
 
     fun init(context: Context) {
         MobileAds.initialize(context) {}
@@ -93,24 +94,37 @@ object AdManager {
         interstitialAd?.show(activity)
     }
 
-    fun loadRewarded(context: Context) {
-        if (rewardedAd != null || isRewardedLoading) return
+    fun loadRewarded(context: Context, onLoaded: ((RewardedAd?) -> Unit)? = null) {
+        if (rewardedAd != null) {
+            onLoaded?.invoke(rewardedAd)
+            return
+        }
+        if (onLoaded != null) {
+            rewardedLoadCallbacks.add(onLoaded)
+        }
+        if (isRewardedLoading) return
         isRewardedLoading = true
 
         val adRequest = AdRequest.Builder().build()
         RewardedAd.load(
-            context,
+            context.applicationContext,
             TEST_REWARDED_ID,
             adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
                     isRewardedLoading = false
+                    val callbacks = ArrayList(rewardedLoadCallbacks)
+                    rewardedLoadCallbacks.clear()
+                    callbacks.forEach { it.invoke(ad) }
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     rewardedAd = null
                     isRewardedLoading = false
+                    val callbacks = ArrayList(rewardedLoadCallbacks)
+                    rewardedLoadCallbacks.clear()
+                    callbacks.forEach { it.invoke(null) }
                 }
             }
         )
@@ -124,24 +138,77 @@ object AdManager {
         onDismissed: () -> Unit
     ) {
         val currentAd = rewardedAd
-        if (currentAd == null || com.apadev.memoryfix.BuildConfig.DEBUG) {
-            // In debug mode or if ad not yet cached, grant reward so testing / user is never blocked
-            loadRewarded(activity)
-            activity.runOnUiThread {
-                onRewardEarned()
-                onDismissed()
-            }
+        if (currentAd != null) {
+            showLoadedRewarded(activity, currentAd, onRewardEarned, onDismissed)
             return
         }
 
-        var rewardGranted = false
+        val progressDialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+            .setMessage("Loading sponsor ad...")
+            .setCancelable(false)
+            .create()
 
-        currentAd.fullScreenContentCallback = object : FullScreenContentCallback() {
+        try {
+            progressDialog.show()
+        } catch (_: Exception) {}
+
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var isHandled = false
+
+        val timeoutRunnable = Runnable {
+            if (!isHandled) {
+                isHandled = true
+                try {
+                    if (progressDialog.isShowing) progressDialog.dismiss()
+                } catch (_: Exception) {}
+                android.widget.Toast.makeText(
+                    activity,
+                    "Ad could not be loaded. Please check your internet connection.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                onDismissed()
+            }
+        }
+        handler.postDelayed(timeoutRunnable, 5000)
+
+        loadRewarded(activity) { loadedAd ->
+            activity.runOnUiThread {
+                if (!isHandled) {
+                    isHandled = true
+                    handler.removeCallbacks(timeoutRunnable)
+                    try {
+                        if (progressDialog.isShowing) progressDialog.dismiss()
+                    } catch (_: Exception) {}
+
+                    if (loadedAd != null) {
+                        showLoadedRewarded(activity, loadedAd, onRewardEarned, onDismissed)
+                    } else {
+                        android.widget.Toast.makeText(
+                            activity,
+                            "Failed to load sponsor ad. Please try again.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        onDismissed()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showLoadedRewarded(
+        activity: Activity,
+        ad: RewardedAd,
+        onRewardEarned: () -> Unit,
+        onDismissed: () -> Unit
+    ) {
+        var rewardEarned = false
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 rewardedAd = null
                 loadRewarded(activity)
                 activity.runOnUiThread {
-                    if (rewardGranted) {
+                    if (rewardEarned) {
                         onRewardEarned()
                     }
                     onDismissed()
@@ -152,15 +219,18 @@ object AdManager {
                 rewardedAd = null
                 loadRewarded(activity)
                 activity.runOnUiThread {
-                    // Fallback: grant reward gracefully if ad failed to display
-                    onRewardEarned()
+                    android.widget.Toast.makeText(
+                        activity,
+                        "Failed to display sponsor video.",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
                     onDismissed()
                 }
             }
         }
 
-        currentAd.show(activity) { _ ->
-            rewardGranted = true
+        ad.show(activity) { _ ->
+            rewardEarned = true
         }
     }
 }
