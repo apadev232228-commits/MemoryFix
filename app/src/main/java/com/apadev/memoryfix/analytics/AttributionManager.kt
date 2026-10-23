@@ -62,7 +62,11 @@ object AttributionManager {
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36")
                     conn.setRequestProperty("Accept", "*/*")
 
-                    val postData = "$entryId=${URLEncoder.encode(answer, "UTF-8")}"
+                    val postData = if (answer.equals("Other", ignoreCase = true)) {
+                        "$entryId=__other_option__&$entryId.other_option_response=Other"
+                    } else {
+                        "$entryId=${URLEncoder.encode(answer, "UTF-8")}"
+                    }
                     conn.outputStream.use { os ->
                         os.write(postData.toByteArray(Charsets.UTF_8))
                         os.flush()
