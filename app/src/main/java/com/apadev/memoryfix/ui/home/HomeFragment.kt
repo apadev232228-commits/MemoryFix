@@ -119,6 +119,10 @@ class HomeFragment : Fragment() {
             val app = requireActivity().application as? MemoryFixApp
             app?.billingManager?.launchBillingFlow(requireActivity())
         }
+
+        binding.layoutHowItWorksCard.setOnClickListener {
+            showHowItWorksBottomSheet()
+        }
     }
 
     private fun showFeaturesBottomSheet() {
