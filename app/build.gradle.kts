@@ -28,8 +28,8 @@ android {
         applicationId = "com.apadev.memoryfix"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         manifestPlaceholders["admobAppId"] = admobAppId
         buildConfigField("String", "PROD_BANNER_ID", "\"$admobBannerId\"")

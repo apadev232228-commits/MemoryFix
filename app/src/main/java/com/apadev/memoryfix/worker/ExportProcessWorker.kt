@@ -89,13 +89,13 @@ class ExportProcessWorker(
         createNotificationChannel()
         val initialNotification = createNotification(0, 100, "Scanning files...")
 
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             setForeground(ForegroundInfo(NOTIFICATION_ID, initialNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC))
         } else {
             setForeground(ForegroundInfo(NOTIFICATION_ID, initialNotification))
         }
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, initialNotification)
         AppLogger.i(TAG, "Export started: isZip=${!zipUriStrings.isNullOrEmpty()}, embedLocation=$embedLocation, mergeOverlays=$mergeOverlays, burnVideo=$burnVideoOverlays, maxLimit=$maxMediaLimit")
 
         if (!zipUriStrings.isNullOrEmpty()) {
@@ -879,7 +879,8 @@ class ExportProcessWorker(
             .setProgress(total, current, false)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
 
@@ -888,7 +889,7 @@ class ExportProcessWorker(
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Memory Fixing Service",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Shows progress while repairing photo timestamps and overlays"
             }
