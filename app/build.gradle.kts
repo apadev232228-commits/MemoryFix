@@ -27,9 +27,9 @@ android {
     defaultConfig {
         applicationId = "com.apadev.memoryfix"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.0.1"
 
         manifestPlaceholders["admobAppId"] = admobAppId
         buildConfigField("String", "PROD_BANNER_ID", "\"$admobBannerId\"")
@@ -44,6 +44,25 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        val keystorePath = localProperties.getProperty("release.keystore.file")
+        val storePass = localProperties.getProperty("release.keystore.password")
+        val keyAliasStr = localProperties.getProperty("release.key.alias")
+        val keyPass = localProperties.getProperty("release.key.password")
+
+        if (!keystorePath.isNullOrEmpty() && !storePass.isNullOrEmpty() && !keyAliasStr.isNullOrEmpty() && !keyPass.isNullOrEmpty()) {
+            val keyFile = file(keystorePath)
+            if (keyFile.exists()) {
+                create("release") {
+                    storeFile = keyFile
+                    storePassword = storePass
+                    keyAlias = keyAliasStr
+                    keyPassword = keyPass
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -52,6 +71,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
         debug {
             isMinifyEnabled = false
