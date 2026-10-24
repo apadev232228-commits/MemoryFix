@@ -23,10 +23,10 @@
         android:theme="@style/Theme.MemoryFix"
         tools:targetApi="35">
 
-        <!-- AdMob Application ID -->
+        <!-- AdMob Application ID injected via local.properties -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-6736930312036077~8751735241" />
+            android:value="${admobAppId}" />
 
         <activity
             android:name=".MainActivity"

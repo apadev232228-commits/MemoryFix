@@ -11,24 +11,20 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
 object AdManager {
 
-    // Official Google AdMob sample test IDs
+    // Official Google AdMob sample test IDs (safe for open git)
     private const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
     private const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
     private const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
 
-    // Real Google AdMob Production IDs
-    private const val PROD_BANNER_ID = "ca-app-pub-6736930312036077/6919778825"
-    private const val PROD_INTERSTITIAL_ID = "ca-app-pub-6736930312036077/3060424863"
-    private const val PROD_REWARDED_ID = "ca-app-pub-6736930312036077/3842315659"
-
+    // Production IDs injected from local.properties at build time
     private val bannerAdUnitId: String
-        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_BANNER_ID else PROD_BANNER_ID
+        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_BANNER_ID else com.apadev.memoryfix.BuildConfig.PROD_BANNER_ID
 
     private val interstitialAdUnitId: String
-        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_INTERSTITIAL_ID else PROD_INTERSTITIAL_ID
+        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_INTERSTITIAL_ID else com.apadev.memoryfix.BuildConfig.PROD_INTERSTITIAL_ID
 
     private val rewardedAdUnitId: String
-        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_REWARDED_ID else PROD_REWARDED_ID
+        get() = if (com.apadev.memoryfix.BuildConfig.DEBUG) TEST_REWARDED_ID else com.apadev.memoryfix.BuildConfig.PROD_REWARDED_ID
 
     private var interstitialAd: InterstitialAd? = null
     private var isAdLoading = false

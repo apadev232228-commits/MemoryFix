@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
+
+val localProperties = Properties()
+val localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localFile.inputStream().use { stream ->
+        localProperties.load(stream)
+    }
+}
+
+val admobAppId: String = localProperties.getProperty("admob.app.id") ?: "ca-app-pub-3940256099942544~3347511713"
+val admobBannerId: String = localProperties.getProperty("admob.banner.id") ?: "ca-app-pub-3940256099942544/6300978111"
+val admobInterstitialId: String = localProperties.getProperty("admob.interstitial.id") ?: "ca-app-pub-3940256099942544/1033173712"
+val admobRewardedId: String = localProperties.getProperty("admob.rewarded.id") ?: "ca-app-pub-3940256099942544/5224354917"
 
 android {
     namespace = "com.apadev.memoryfix"
@@ -15,6 +30,11 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "PROD_BANNER_ID", "\"$admobBannerId\"")
+        buildConfigField("String", "PROD_INTERSTITIAL_ID", "\"$admobInterstitialId\"")
+        buildConfigField("String", "PROD_REWARDED_ID", "\"$admobRewardedId\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
