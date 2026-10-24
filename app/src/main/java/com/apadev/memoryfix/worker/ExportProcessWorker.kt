@@ -69,6 +69,7 @@ class ExportProcessWorker(
         const val RESULT_CHUNKS_MERGED = "RESULT_CHUNKS_MERGED"
 
         const val CHANNEL_ID = "memory_fix_channel"
+        const val CHANNEL_COMPLETE_ID = "memory_fix_complete_channel"
         const val NOTIFICATION_ID = 1001
         const val NOTIFICATION_COMPLETE_ID = 1002
     }
@@ -886,15 +887,29 @@ class ExportProcessWorker(
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Progress channel
+            val progressChannel = NotificationChannel(
                 CHANNEL_ID,
-                "Memory Fixing Service",
+                "Memory Fixing Progress",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Shows progress while repairing photo timestamps and overlays"
+                description = "Shows live progress while repairing photo timestamps and overlays"
             }
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+            manager.createNotificationChannel(progressChannel)
+
+            // Completion alert channel (high importance with sound and banner)
+            val completeChannel = NotificationChannel(
+                CHANNEL_COMPLETE_ID,
+                "Restoration Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifies when photo and video restoration is complete"
+                enableVibration(true)
+                setShowBadge(true)
+            }
+            manager.createNotificationChannel(completeChannel)
         }
     }
 
@@ -905,6 +920,9 @@ class ExportProcessWorker(
         photosFixed: Int,
         videosFixed: Int
     ) {
+        // Dismiss the ongoing progress notification so it doesn't linger
+        notificationManager.cancel(NOTIFICATION_ID)
+
         val intent = Intent(context, com.apadev.memoryfix.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -922,12 +940,13 @@ class ExportProcessWorker(
             "Fixed $totalFixed memories ($photosFixed photos, $videosFixed videos) to Pictures > Snapchat Memories. $failedCount items had issues."
         }
 
-        val doneNotification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val doneNotification = NotificationCompat.Builder(context, CHANNEL_COMPLETE_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
@@ -936,6 +955,9 @@ class ExportProcessWorker(
     }
 
     private fun showFailureNotification(notificationManager: NotificationManager, reason: String) {
+        // Dismiss the ongoing progress notification
+        notificationManager.cancel(NOTIFICATION_ID)
+
         val intent = Intent(context, com.apadev.memoryfix.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -946,11 +968,12 @@ class ExportProcessWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
-        val failureNotification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val failureNotification = NotificationCompat.Builder(context, CHANNEL_COMPLETE_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("MemoryFix Encountered an Issue")
             .setContentText(reason)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
