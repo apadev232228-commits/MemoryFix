@@ -54,6 +54,8 @@ class ExportProcessWorker(
 
         const val PROGRESS_CURRENT = "PROGRESS_CURRENT"
         const val PROGRESS_TOTAL = "PROGRESS_TOTAL"
+        const val PROGRESS_MEDIA_CURRENT = "PROGRESS_MEDIA_CURRENT"
+        const val PROGRESS_MEDIA_TOTAL = "PROGRESS_MEDIA_TOTAL"
         const val PROGRESS_FILE = "PROGRESS_FILE"
         const val PROGRESS_PHOTOS = "PROGRESS_PHOTOS"
         const val PROGRESS_VIDEOS = "PROGRESS_VIDEOS"
@@ -420,7 +422,7 @@ class ExportProcessWorker(
         val chunkCacheDir = File(context.cacheDir, "zip_chunks").apply { mkdirs() }
 
         val totalChunkGroups = chunkGroupMap.size
-        val totalWorkUnits = total
+        val totalWorkUnits = total + totalChunkGroups
         var workProgress = 0
 
         // Report total immediately so UI shows progress from the start
@@ -428,6 +430,8 @@ class ExportProcessWorker(
             workDataOf(
                 PROGRESS_CURRENT to 0,
                 PROGRESS_TOTAL to totalWorkUnits,
+                PROGRESS_MEDIA_CURRENT to 0,
+                PROGRESS_MEDIA_TOTAL to total,
                 PROGRESS_FILE to "Starting restoration...",
                 PROGRESS_PHOTOS to 0,
                 PROGRESS_VIDEOS to 0,
@@ -476,6 +480,8 @@ class ExportProcessWorker(
                                             workDataOf(
                                                 PROGRESS_CURRENT to workProgress,
                                                 PROGRESS_TOTAL to totalWorkUnits,
+                                                PROGRESS_MEDIA_CURRENT to processed,
+                                                PROGRESS_MEDIA_TOTAL to total,
                                                 PROGRESS_FILE to baseName,
                                                 PROGRESS_PHOTOS to photosFixed,
                                                 PROGRESS_VIDEOS to videosFixed,
@@ -546,16 +552,20 @@ class ExportProcessWorker(
                                     photosFixed++
                                 }
 
-                                setProgress(
-                                    workDataOf(
-                                        PROGRESS_CURRENT to workProgress,
-                                        PROGRESS_TOTAL to totalWorkUnits,
-                                        PROGRESS_FILE to baseName,
-                                        PROGRESS_PHOTOS to photosFixed,
-                                        PROGRESS_VIDEOS to videosFixed,
-                                        PROGRESS_OVERLAYS to overlaysMerged
+                                if (workProgress % 5 == 0 || workProgress == total) {
+                                    setProgress(
+                                        workDataOf(
+                                            PROGRESS_CURRENT to workProgress,
+                                            PROGRESS_TOTAL to totalWorkUnits,
+                                            PROGRESS_MEDIA_CURRENT to processed,
+                                            PROGRESS_MEDIA_TOTAL to total,
+                                            PROGRESS_FILE to baseName,
+                                            PROGRESS_PHOTOS to photosFixed,
+                                            PROGRESS_VIDEOS to videosFixed,
+                                            PROGRESS_OVERLAYS to overlaysMerged
+                                        )
                                     )
-                                )
+                                }
                             } else if (name.contains("overlay", ignoreCase = true) && name.endsWith(".png", ignoreCase = true)) {
                                 val baseKey = MediaScanner.extractCanonicalBaseKey(baseName)
                                 val overlayFile = File(overlayCacheDir, "$baseKey.png")
@@ -631,18 +641,21 @@ class ExportProcessWorker(
         var groupIndex = 0
         for ((primaryName, group) in chunkGroupMap) {
             groupIndex++
+            workProgress++
             val statusMsg = "Stitching video stories ($groupIndex of $totalChunkGroups)..."
             setProgress(
                 workDataOf(
-                    PROGRESS_CURRENT to totalWorkUnits,
+                    PROGRESS_CURRENT to workProgress,
                     PROGRESS_TOTAL to totalWorkUnits,
+                    PROGRESS_MEDIA_CURRENT to total,
+                    PROGRESS_MEDIA_TOTAL to total,
                     PROGRESS_FILE to statusMsg,
                     PROGRESS_PHOTOS to photosFixed,
                     PROGRESS_VIDEOS to videosFixed,
                     PROGRESS_OVERLAYS to overlaysMerged
                 )
             )
-            val notif = createNotification(totalWorkUnits, totalWorkUnits, statusMsg)
+            val notif = createNotification(workProgress, totalWorkUnits, statusMsg)
             notificationManager.notify(NOTIFICATION_ID, notif)
 
             val chunkFiles = group.map { File(chunkCacheDir, it.name) }
@@ -793,6 +806,8 @@ class ExportProcessWorker(
             workDataOf(
                 PROGRESS_CURRENT to totalWorkUnits,
                 PROGRESS_TOTAL to totalWorkUnits,
+                PROGRESS_MEDIA_CURRENT to total,
+                PROGRESS_MEDIA_TOTAL to total,
                 PROGRESS_FILE to "Finalizing gallery indexing...",
                 PROGRESS_PHOTOS to photosFixed,
                 PROGRESS_VIDEOS to videosFixed,

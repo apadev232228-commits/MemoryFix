@@ -65,6 +65,8 @@ class ProcessingFragment : Fragment() {
 
                 val current = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_CURRENT, 0)
                 val total = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_TOTAL, 0)
+                val mediaCurrent = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_MEDIA_CURRENT, current)
+                val mediaTotal = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_MEDIA_TOTAL, total)
                 val progressFile = workInfo.progress.getString(ExportProcessWorker.PROGRESS_FILE)
                 val photosCount = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_PHOTOS, 0)
                 val videosCount = workInfo.progress.getInt(ExportProcessWorker.PROGRESS_VIDEOS, 0)
@@ -80,16 +82,16 @@ class ProcessingFragment : Fragment() {
                     val isFinalizing = progressFile?.startsWith("Finalizing") == true
                     val isStitching = progressFile?.startsWith("Stitching") == true
                     binding.tvItemCounter.text = when {
-                        isFinalizing -> "Finalizing gallery indexing ($total memories)..."
-                        isStitching -> progressFile ?: "Stitching stories..."
-                        else -> "Restoring $current of $total memories"
+                        isFinalizing -> "Finalizing gallery indexing ($mediaTotal memories)..."
+                        isStitching -> progressFile ?: "Stitching video stories..."
+                        else -> "Restoring $mediaCurrent of $mediaTotal memories"
                     }
                     val displayStatus = when {
-                        isStitching -> progressFile
+                        isStitching -> "Merging multi-part snap clips into full videos"
                         isFinalizing -> progressFile
                         progressFile?.startsWith("Starting") == true -> progressFile
                         !progressFile.isNullOrEmpty() -> "Restoring: $progressFile"
-                        else -> "Restoring memory $current of $total"
+                        else -> "Restoring memory $mediaCurrent of $mediaTotal"
                     }
                     binding.tvSingleStatus.text = displayStatus
                     binding.progressLinear.isIndeterminate = false
@@ -97,7 +99,7 @@ class ProcessingFragment : Fragment() {
                     binding.progressLinear.progress = current
                 } else if (total > 0) {
                     binding.tvProgressPercentage.text = "0%"
-                    binding.tvItemCounter.text = "Preparing $total memories..."
+                    binding.tvItemCounter.text = "Preparing $mediaTotal memories..."
                     binding.tvSingleStatus.text = progressFile ?: "Starting restoration..."
                     binding.progressLinear.isIndeterminate = false
                     binding.progressLinear.max = total
