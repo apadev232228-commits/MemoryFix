@@ -37,6 +37,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvResultSubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -168,11 +169,12 @@
                     app:tint="@color/accent" />
 
                 <TextView
+                    android:id="@+id/tvTotalFilesFixedLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:text="Total Files Fixed"
+                    android:text="Memories Restored to Gallery"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -440,6 +442,47 @@
                     android:layout_height="wrap_content"
                     android:text="0"
                     android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Total Accounted Row (100% Reconciliation) -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="12dp"
+                android:background="@color/surface_border" />
+
+            <LinearLayout
+                android:id="@+id/layoutTotalAccountedRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_check_circle"
+                    app:tint="@color/accent" />
+
+                <TextView
+                    android:id="@+id/tvTotalAccountedLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Total Memories Accounted"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTotalAccountedCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 of 0"
+                    android:textColor="@color/accent"
                     android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>

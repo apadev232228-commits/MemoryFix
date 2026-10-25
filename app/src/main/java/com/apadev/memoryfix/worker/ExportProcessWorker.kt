@@ -420,7 +420,7 @@ class ExportProcessWorker(
         val chunkCacheDir = File(context.cacheDir, "zip_chunks").apply { mkdirs() }
 
         val totalChunkGroups = chunkGroupMap.size
-        val totalWorkUnits = total + totalChunkGroups
+        val totalWorkUnits = total
         var workProgress = 0
 
         // Report total immediately so UI shows progress from the start
@@ -631,11 +631,10 @@ class ExportProcessWorker(
         var groupIndex = 0
         for ((primaryName, group) in chunkGroupMap) {
             groupIndex++
-            workProgress++
             val statusMsg = "Stitching video stories ($groupIndex of $totalChunkGroups)..."
             setProgress(
                 workDataOf(
-                    PROGRESS_CURRENT to workProgress,
+                    PROGRESS_CURRENT to totalWorkUnits,
                     PROGRESS_TOTAL to totalWorkUnits,
                     PROGRESS_FILE to statusMsg,
                     PROGRESS_PHOTOS to photosFixed,
@@ -643,7 +642,7 @@ class ExportProcessWorker(
                     PROGRESS_OVERLAYS to overlaysMerged
                 )
             )
-            val notif = createNotification(workProgress, totalWorkUnits, statusMsg)
+            val notif = createNotification(totalWorkUnits, totalWorkUnits, statusMsg)
             notificationManager.notify(NOTIFICATION_ID, notif)
 
             val chunkFiles = group.map { File(chunkCacheDir, it.name) }

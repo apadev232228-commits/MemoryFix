@@ -14,6 +14,7 @@ import com.apadev.memoryfix.MainActivity
 import com.apadev.memoryfix.R
 import com.apadev.memoryfix.databinding.FragmentResultBinding
 import com.google.android.play.core.review.ReviewManagerFactory
+import java.text.NumberFormat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -92,9 +93,20 @@ class ResultFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val numberFormat = NumberFormat.getIntegerInstance()
+        val totalHandled = totalFixed + duplicatesSkipped + chunksMerged
+        val targetTotal = if (totalScanned > 0) totalScanned else totalHandled
+
+        // Subtitle message with 100% reconciliation
+        if (duplicatesSkipped > 0 || chunksMerged > 0) {
+            binding.tvResultSubtitle.text = "All ${numberFormat.format(targetTotal)} memories accounted for: ${numberFormat.format(totalFixed)} restored to gallery, ${numberFormat.format(duplicatesSkipped)} duplicates cleaned, and ${numberFormat.format(chunksMerged)} multi-part clips merged."
+        } else {
+            binding.tvResultSubtitle.text = "All ${numberFormat.format(totalFixed)} memories restored and organized in your gallery with original dates."
+        }
+
         // Prominent Dual Cards: Successful vs Failed
-        binding.tvHeaderSuccessCount.text = totalFixed.toString()
-        binding.tvHeaderFailedCount.text = failedCount.toString()
+        binding.tvHeaderSuccessCount.text = numberFormat.format(totalFixed)
+        binding.tvHeaderFailedCount.text = numberFormat.format(failedCount)
 
         if (failedCount > 0) {
             val errorColor = ContextCompat.getColor(requireContext(), R.color.error)
@@ -104,7 +116,7 @@ class ResultFragment : Fragment() {
 
             binding.layoutSkippedRow.visibility = View.VISIBLE
             binding.layoutSkippedContent.visibility = View.VISIBLE
-            binding.tvResultSkippedCount.text = failedCount.toString()
+            binding.tvResultSkippedCount.text = numberFormat.format(failedCount)
             binding.tvResultSkippedCount.setTextColor(errorColor)
         } else {
             val secondaryColor = ContextCompat.getColor(requireContext(), R.color.text_secondary)
@@ -117,15 +129,15 @@ class ResultFragment : Fragment() {
         }
 
         // Summary Breakdown Card
-        binding.tvResultDatesCount.text = totalFixed.toString()
-        binding.tvResultPhotosCount.text = photosFixed.toString()
-        binding.tvResultVideosCount.text = videosFixed.toString()
-        binding.tvResultOverlaysCount.text = overlaysMerged.toString()
+        binding.tvResultDatesCount.text = numberFormat.format(totalFixed)
+        binding.tvResultPhotosCount.text = numberFormat.format(photosFixed)
+        binding.tvResultVideosCount.text = numberFormat.format(videosFixed)
+        binding.tvResultOverlaysCount.text = numberFormat.format(overlaysMerged)
 
         if (duplicatesSkipped > 0) {
             binding.layoutDuplicatesRow.visibility = View.VISIBLE
             binding.layoutDuplicatesContent.visibility = View.VISIBLE
-            binding.tvResultDuplicatesCount.text = duplicatesSkipped.toString()
+            binding.tvResultDuplicatesCount.text = numberFormat.format(duplicatesSkipped)
         } else {
             binding.layoutDuplicatesRow.visibility = View.GONE
             binding.layoutDuplicatesContent.visibility = View.GONE
@@ -134,11 +146,14 @@ class ResultFragment : Fragment() {
         if (chunksMerged > 0) {
             binding.layoutChunksRow.visibility = View.VISIBLE
             binding.layoutChunksContent.visibility = View.VISIBLE
-            binding.tvResultChunksCount.text = chunksMerged.toString()
+            binding.tvResultChunksCount.text = numberFormat.format(chunksMerged)
         } else {
             binding.layoutChunksRow.visibility = View.GONE
             binding.layoutChunksContent.visibility = View.GONE
         }
+
+        // Total Accounted Row (100% reconciliation)
+        binding.tvTotalAccountedCount.text = "${numberFormat.format(totalHandled)} of ${numberFormat.format(targetTotal)}"
 
         if (failedCount > 0) {
             binding.cardErrorReport.visibility = View.VISIBLE

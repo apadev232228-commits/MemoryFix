@@ -355,31 +355,16 @@ class AnalysisFragment : Fragment() {
         val numberFormat = NumberFormat.getIntegerInstance()
         val isDeduplicating = binding.switchSkipDuplicates.isChecked
 
-        val total = if (isDeduplicating) {
-            s.totalMediaFiles
-        } else {
-            if (s.rawMediaCount > 0) s.rawMediaCount else (s.totalMediaFiles + s.duplicateCount)
-        }
+        val totalScanned = if (s.rawMediaCount > 0) s.rawMediaCount else (s.totalMediaFiles + s.duplicateCount)
+        val photos = if (s.rawPhotoCount > 0) s.rawPhotoCount else s.photoCount
+        val videos = if (s.rawVideoCount > 0) s.rawVideoCount else s.videoCount
 
-        val photos = if (isDeduplicating) {
-            s.photoCount
-        } else {
-            if (s.rawPhotoCount > 0) s.rawPhotoCount else s.photoCount
-        }
-
-        val videos = if (isDeduplicating) {
-            s.videoCount
-        } else {
-            if (s.rawVideoCount > 0) s.rawVideoCount else s.videoCount
-        }
-
-        binding.tvTotalFiles.text = numberFormat.format(total)
+        binding.tvTotalFiles.text = numberFormat.format(totalScanned)
         binding.tvPhotoCount.text = "${numberFormat.format(photos)} Photos"
         binding.tvVideoCount.text = "${numberFormat.format(videos)} Videos"
 
         if (isDeduplicating && s.duplicateCount > 0) {
-            val totalScanned = if (s.rawMediaCount > 0) s.rawMediaCount else s.totalMediaFiles + s.duplicateCount
-            binding.tvTotalSubtitle.text = "${numberFormat.format(s.duplicateCount)} duplicates excluded (from ${numberFormat.format(totalScanned)} total)"
+            binding.tvTotalSubtitle.text = "${numberFormat.format(s.totalMediaFiles)} unique memories to restore • ${numberFormat.format(s.duplicateCount)} duplicates excluded"
             binding.tvTotalSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent))
         } else if (s.duplicateCount > 0) {
             binding.tvTotalSubtitle.text = "Includes ${numberFormat.format(s.duplicateCount)} duplicate throwback copies"
@@ -389,8 +374,8 @@ class AnalysisFragment : Fragment() {
             binding.tvTotalSubtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
         }
 
-        if (total > 0) {
-            val photoPct = (photos * 100) / total
+        if (totalScanned > 0) {
+            val photoPct = (photos * 100) / totalScanned
             val videoPct = 100 - photoPct
             binding.tvPhotoPercentage.text = "($photoPct%)"
             binding.tvVideoPercentage.text = "($videoPct%)"
